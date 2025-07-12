@@ -29,6 +29,13 @@ Admin Role:
 
 Team members: Nikhil Kumar Gupta- nikhil.kumargupta0007@gmail.com Antima Mishra- antimamishra113@gmail.com Pavni Srivastava- pavnicr7@gmail.com Harshita Tyagi- harshita8aug@gmail.com
 
+<img width="1773" height="922" alt="image" src="https://github.com/user-attachments/assets/39b12001-cf38-4d30-81fc-87010fa9fa51" />
+<img width="1798" height="904" alt="image" src="https://github.com/user-attachments/assets/99c45b23-937b-46bf-a666-e35ffda67576" />
+<img width="1608" height="871" alt="image" src="https://github.com/user-attachments/assets/6900b110-dd1e-4361-b8b1-a8a62f1db161" />
+<img width="1781" height="604" alt="image" src="https://github.com/user-attachments/assets/e582da7d-0270-417e-bb66-a1705d6e553d" />
+<img width="873" height="926" alt="image" src="https://github.com/user-attachments/assets/e4f53923-a808-449d-8f88-aa783720526f" />
+
+
 
 
 
