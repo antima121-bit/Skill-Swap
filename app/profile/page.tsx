@@ -1,397 +1,190 @@
 "use client"
 
-import { useState } from "react"
-import { Camera, MapPin, Star, Edit, Plus, X, Save, ArrowLeft } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Switch } from "@/components/ui/switch"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Logo } from "@/components/logo"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { MapPinIcon, StarIcon } from "lucide-react"
+import { getCurrentUser, getSwapRequests } from "@/lib/database"
+import type { User, SwapRequest, ActiveSwap } from "@/lib/supabase"
+import { Skeleton } from "@/components/ui/skeleton"
+import { useRouter } from "next/navigation"
 
-export default function ProfilePage() {
-  const [isEditing, setIsEditing] = useState(false)
-  const [profile, setProfile] = useState({
-    name: "Arjun Sharma",
-    email: "arjun.sharma@example.com",
-    location: "Bangalore, Karnataka",
-    bio: "Full-stack developer passionate about creating innovative solutions. Love learning new technologies and sharing knowledge with fellow Indian developers.",
-    avatar: "/images/person-avatar.png", // Updated to a more realistic image
-    isPublic: true,
-    skillsOffered: ["React", "Node.js", "TypeScript", "Python"],
-    skillsWanted: ["UI/UX Design", "Figma", "Adobe Creative Suite"],
-    availability: "Evenings and Weekends",
-    rating: 4.8,
-    completedSwaps: 12,
-    hourlyRate: "₹500",
-  })
+export default function MyProfilePage() {
+  const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [swapRequests, setSwapRequests] = useState<{
+    pending: SwapRequest[]
+    active: ActiveSwap[]
+    completed: SwapRequest[]
+  } | null>(null)
+  const router = useRouter()
 
-  const [newSkillOffered, setNewSkillOffered] = useState("")
-  const [newSkillWanted, setNewSkillWanted] = useState("")
-
-  const handleSave = () => {
-    setIsEditing(false)
-    // Save profile logic here
-    console.log("Profile saved:", profile)
-  }
-
-  const addSkillOffered = () => {
-    if (newSkillOffered.trim()) {
-      setProfile({
-        ...profile,
-        skillsOffered: [...profile.skillsOffered, newSkillOffered.trim()],
-      })
-      setNewSkillOffered("")
+  useEffect(() => {
+    const loadUserData = async () => {
+      setLoading(true)
+      const currentUser = await getCurrentUser()
+      if (!currentUser) {
+        router.push("/auth") // Redirect to login if not authenticated
+        return
+      }
+      setUser(currentUser)
+      const fetchedSwapRequests = await getSwapRequests(currentUser.id)
+      setSwapRequests(fetchedSwapRequests)
+      setLoading(false)
     }
-  }
+    loadUserData()
+  }, [router])
 
-  const addSkillWanted = () => {
-    if (newSkillWanted.trim()) {
-      setProfile({
-        ...profile,
-        skillsWanted: [...profile.skillsWanted, newSkillWanted.trim()],
-      })
-      setNewSkillWanted("")
-    }
-  }
-
-  const removeSkillOffered = (index: number) => {
-    setProfile({
-      ...profile,
-      skillsOffered: profile.skillsOffered.filter((_, i) => i !== index),
-    })
-  }
-
-  const removeSkillWanted = (index: number) => {
-    setProfile({
-      ...profile,
-      skillsWanted: profile.skillsWanted.filter((_, i) => i !== index),
-    })
-  }
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-green-900 to-black">
-      {/* Navigation */}
-      <nav className="backdrop-blur-md bg-black/30 border-b border-green-500/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/">
-              <Button variant="ghost" className="text-white hover:bg-green-500/20 font-black">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Home
-              </Button>
-            </Link>
-            <div className="flex items-center space-x-3">
-              <Logo className="w-10 h-10" />
-              <span className="text-white font-black text-xl tracking-wide">Skill Swap India</span>
+  if (loading) {
+    return (
+      <div className="flex min-h-screen flex-col items-center p-4">
+        <Card className="w-full max-w-4xl">
+          <CardHeader className="flex flex-col items-center space-y-4 p-6">
+            <Skeleton className="h-32 w-32 rounded-full" />
+            <Skeleton className="h-8 w-1/2" />
+            <Skeleton className="h-6 w-3/4" />
+            <Skeleton className="h-5 w-1/3" />
+            <Skeleton className="h-5 w-1/4" />
+            <div className="flex gap-2">
+              <Skeleton className="h-8 w-24" />
+              <Skeleton className="h-8 w-24" />
             </div>
-            <div className="flex items-center space-x-4">
-              <Link href="/search">
-                <Button variant="ghost" className="text-white hover:bg-green-500/20 font-black">
-                  Browse
-                </Button>
-              </Link>
-              <Link href="/swaps">
-                <Button variant="ghost" className="text-white hover:bg-green-500/20 font-black">
-                  My Swaps
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Profile Header */}
-        <Card className="backdrop-blur-md bg-black/30 border-green-500/30 rounded-2xl shadow-xl mb-8">
-          <CardContent className="p-8">
-            <div className="flex flex-col md:flex-row items-start md:items-center space-y-6 md:space-y-0 md:space-x-8">
-              {/* Avatar */}
-              <div className="relative">
-                <Avatar className="w-32 h-32 ring-4 ring-green-500/30">
-                  <AvatarImage src={profile.avatar || "/placeholder.svg"} alt={profile.name} />
-                  <AvatarFallback className="bg-gradient-to-r from-green-500 to-emerald-600 text-white text-2xl font-black">
-                    {profile.name
-                      .split(" ")
-                      .map((n) => n[0])
-                      .join("")}
-                  </AvatarFallback>
-                </Avatar>
-                {isEditing && (
-                  <Button
-                    size="sm"
-                    className="absolute -bottom-2 -right-2 rounded-full w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-600 font-black"
-                  >
-                    <Camera className="w-4 h-4" />
-                  </Button>
-                )}
-              </div>
-
-              {/* Profile Info */}
-              <div className="flex-1">
-                {isEditing ? (
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="name" className="text-white font-black">
-                        Name
-                      </Label>
-                      <Input
-                        id="name"
-                        value={profile.name}
-                        onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-                        className="bg-black/30 backdrop-blur-md border-green-500/30 text-white placeholder-gray-400 rounded-xl font-bold"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="location" className="text-white font-black">
-                        Location
-                      </Label>
-                      <Input
-                        id="location"
-                        value={profile.location}
-                        onChange={(e) => setProfile({ ...profile, location: e.target.value })}
-                        className="bg-black/30 backdrop-blur-md border-green-500/30 text-white placeholder-gray-400 rounded-xl font-bold"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="bio" className="text-white font-black">
-                        Bio
-                      </Label>
-                      <Textarea
-                        id="bio"
-                        value={profile.bio}
-                        onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-                        className="bg-black/30 backdrop-blur-md border-green-500/30 text-white placeholder-gray-400 rounded-xl font-bold"
-                        rows={3}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="hourlyRate" className="text-white font-black">
-                        Hourly Rate
-                      </Label>
-                      <Input
-                        id="hourlyRate"
-                        value={profile.hourlyRate}
-                        onChange={(e) => setProfile({ ...profile, hourlyRate: e.target.value })}
-                        className="bg-black/30 backdrop-blur-md border-green-500/30 text-white placeholder-gray-400 rounded-xl font-bold"
-                        placeholder="₹500"
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    <h1 className="text-3xl font-black text-white mb-2">{profile.name}</h1>
-                    <div className="flex items-center space-x-4 text-gray-300 mb-4 font-bold">
-                      <div className="flex items-center space-x-1">
-                        <MapPin className="w-4 h-4" />
-                        <span>{profile.location}</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                        <span>{profile.rating}</span>
-                      </div>
-                      <span>{profile.completedSwaps} swaps completed</span>
-                      <span className="text-green-400">{profile.hourlyRate}/hour</span>
-                    </div>
-                    <p className="text-gray-300 mb-4 font-bold">{profile.bio}</p>
-                  </div>
-                )}
-
-                {/* Profile Visibility */}
-                <div className="flex items-center space-x-3 mb-4">
-                  <Switch
-                    checked={profile.isPublic}
-                    onCheckedChange={(checked) => setProfile({ ...profile, isPublic: checked })}
-                    disabled={!isEditing}
-                  />
-                  <Label className="text-white font-black">Public Profile</Label>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex flex-col space-y-2">
-                {isEditing ? (
-                  <>
-                    <Button
-                      onClick={handleSave}
-                      className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 font-black"
-                    >
-                      <Save className="w-4 h-4 mr-2" />
-                      Save Changes
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => setIsEditing(false)}
-                      className="border-green-500/30 text-green-300 hover:bg-green-500/20 font-black bg-transparent"
-                    >
-                      Cancel
-                    </Button>
-                  </>
-                ) : (
-                  <Button
-                    onClick={() => setIsEditing(true)}
-                    className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 font-black"
-                  >
-                    <Edit className="w-4 h-4 mr-2" />
-                    Edit Profile
-                  </Button>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="grid gap-8 md:grid-cols-2">
-          {/* Skills Offered */}
-          <Card className="backdrop-blur-md bg-black/30 border-green-500/30 rounded-2xl shadow-xl">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center justify-between font-black">
-                Skills I Offer
-                {isEditing && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="border-green-500/30 text-green-300 hover:bg-green-500/20 bg-transparent font-black"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </Button>
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isEditing && (
-                <div className="flex space-x-2 mb-4">
-                  <Input
-                    placeholder="Add a skill you can teach"
-                    value={newSkillOffered}
-                    onChange={(e) => setNewSkillOffered(e.target.value)}
-                    className="bg-black/30 backdrop-blur-md border-green-500/30 text-white placeholder-gray-400 rounded-xl font-bold"
-                    onKeyPress={(e) => e.key === "Enter" && addSkillOffered()}
-                  />
-                  <Button
-                    onClick={addSkillOffered}
-                    size="sm"
-                    className="bg-gradient-to-r from-green-500 to-green-600 font-black"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </Button>
-                </div>
-              )}
-              <div className="flex flex-wrap gap-2">
-                {profile.skillsOffered.map((skill, index) => (
-                  <Badge
-                    key={index}
-                    className="bg-green-500/20 text-green-300 border-green-500/30 hover:bg-green-500/30 relative group font-black"
-                  >
-                    {skill}
-                    {isEditing && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="ml-2 h-4 w-4 p-0 text-green-300 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => removeSkillOffered(index)}
-                      >
-                        <X className="w-3 h-3" />
-                      </Button>
-                    )}
-                  </Badge>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Skills Wanted */}
-          <Card className="backdrop-blur-md bg-black/30 border-green-500/30 rounded-2xl shadow-xl">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center justify-between font-black">
-                Skills I Want to Learn
-                {isEditing && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="border-green-500/30 text-green-300 hover:bg-green-500/20 bg-transparent font-black"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </Button>
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isEditing && (
-                <div className="flex space-x-2 mb-4">
-                  <Input
-                    placeholder="Add a skill you want to learn"
-                    value={newSkillWanted}
-                    onChange={(e) => setNewSkillWanted(e.target.value)}
-                    className="bg-black/30 backdrop-blur-md border-green-500/30 text-white placeholder-gray-400 rounded-xl font-bold"
-                    onKeyPress={(e) => e.key === "Enter" && addSkillWanted()}
-                  />
-                  <Button
-                    onClick={addSkillWanted}
-                    size="sm"
-                    className="bg-gradient-to-r from-emerald-500 to-emerald-600 font-black"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </Button>
-                </div>
-              )}
-              <div className="flex flex-wrap gap-2">
-                {profile.skillsWanted.map((skill, index) => (
-                  <Badge
-                    key={index}
-                    className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/30 relative group font-black"
-                  >
-                    {skill}
-                    {isEditing && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="ml-2 h-4 w-4 p-0 text-emerald-300 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => removeSkillWanted(index)}
-                      >
-                        <X className="w-3 h-3" />
-                      </Button>
-                    )}
-                  </Badge>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Availability */}
-        <Card className="backdrop-blur-md bg-black/30 border-green-500/30 rounded-2xl shadow-xl mt-8">
-          <CardHeader>
-            <CardTitle className="text-white font-black">Availability</CardTitle>
           </CardHeader>
-          <CardContent>
-            {isEditing ? (
-              <Select
-                value={profile.availability}
-                onValueChange={(value) => setProfile({ ...profile, availability: value })}
-              >
-                <SelectTrigger className="bg-black/30 backdrop-blur-md border-green-500/30 text-white rounded-xl font-bold">
-                  <SelectValue placeholder="Select your availability" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Weekdays">Weekdays</SelectItem>
-                  <SelectItem value="Evenings">Evenings</SelectItem>
-                  <SelectItem value="Weekends">Weekends</SelectItem>
-                  <SelectItem value="Evenings and Weekends">Evenings and Weekends</SelectItem>
-                  <SelectItem value="Flexible">Flexible Schedule</SelectItem>
-                </SelectContent>
-              </Select>
-            ) : (
-              <p className="text-gray-300 font-bold">{profile.availability}</p>
-            )}
+          <CardContent className="space-y-8 p-6">
+            <div className="space-y-2">
+              <Skeleton className="h-6 w-1/4" />
+              <div className="flex flex-wrap gap-2">
+                <Skeleton className="h-8 w-20" />
+                <Skeleton className="h-8 w-20" />
+                <Skeleton className="h-8 w-20" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-6 w-1/4" />
+              <div className="flex flex-wrap gap-2">
+                <Skeleton className="h-8 w-20" />
+                <Skeleton className="h-8 w-20" />
+                <Skeleton className="h-8 w-20" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-6 w-1/4" />
+              <Skeleton className="h-24 w-full" />
+            </div>
           </CardContent>
         </Card>
       </div>
+    )
+  }
+
+  if (!user) {
+    return null // Redirect handled by useEffect
+  }
+
+  return (
+    <div className="flex min-h-screen flex-col items-center p-4">
+      <Card className="w-full max-w-4xl">
+        <CardHeader className="flex flex-col items-center space-y-4 p-6">
+          <Avatar className="h-32 w-32">
+            <AvatarImage src={user.avatar_url || "/placeholder-user.jpg"} />
+            <AvatarFallback className="text-5xl">{user.name.charAt(0)}</AvatarFallback>
+          </Avatar>
+          <CardTitle className="text-3xl font-bold">{user.name}</CardTitle>
+          <p className="text-center text-gray-500 dark:text-gray-400">{user.bio}</p>
+          <div className="flex items-center space-x-4 text-gray-500 dark:text-gray-400">
+            <div className="flex items-center">
+              <MapPinIcon className="mr-1 h-4 w-4" />
+              <span>{user.location}</span>
+            </div>
+            <div className="flex items-center">
+              <StarIcon className="mr-1 h-4 w-4 fill-yellow-400 text-yellow-400" />
+              <span>
+                {user.rating} ({user.completed_swaps} swaps)
+              </span>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Link href="/profile/edit" passHref>
+              <Button variant="outline">Edit Profile</Button>
+            </Link>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-8 p-6">
+          <div>
+            <h3 className="mb-3 text-2xl font-semibold">Skills Offered</h3>
+            <div className="flex flex-wrap gap-2">
+              {user.user_skills_offered?.length === 0 ? (
+                <p className="text-gray-500 dark:text-gray-400">No skills offered.</p>
+              ) : (
+                user.user_skills_offered?.map((us) => (
+                  <Badge key={us.skill_id} variant="secondary">
+                    {us.skills?.name}
+                  </Badge>
+                ))
+              )}
+            </div>
+          </div>
+          <div>
+            <h3 className="mb-3 text-2xl font-semibold">Skills Wanted</h3>
+            <div className="flex flex-wrap gap-2">
+              {user.user_skills_wanted?.length === 0 ? (
+                <p className="text-gray-500 dark:text-gray-400">No skills wanted.</p>
+              ) : (
+                user.user_skills_wanted?.map((us) => (
+                  <Badge key={us.skill_id} variant="secondary">
+                    {us.skills?.name}
+                  </Badge>
+                ))
+              )}
+            </div>
+          </div>
+          <div>
+            <h3 className="mb-3 text-2xl font-semibold">Availability</h3>
+            <p className="text-gray-700 dark:text-gray-300">{user.availability || "Not specified"}</p>
+          </div>
+          <div>
+            <h3 className="mb-3 text-2xl font-semibold">Hourly Rate</h3>
+            <p className="text-gray-700 dark:text-gray-300">{user.hourly_rate || "Not specified"}</p>
+          </div>
+          {swapRequests && (
+            <div>
+              <h3 className="mb-3 text-2xl font-semibold">My Swap History</h3>
+              <div className="space-y-4">
+                {swapRequests.completed.length === 0 ? (
+                  <p className="text-gray-500 dark:text-gray-400">No completed swaps yet.</p>
+                ) : (
+                  swapRequests.completed.map((swap) => (
+                    <Card key={swap.id} className="p-4">
+                      <p className="text-sm text-gray-500">
+                        {new Date(swap.updated_at).toLocaleDateString()} - Completed
+                      </p>
+                      <p className="mt-2">
+                        You {swap.requester_id === user.id ? "offered" : "received"} {swap.skill_offered?.name} for{" "}
+                        {swap.skill_wanted?.name} with{" "}
+                        {swap.requester_id === user.id ? swap.recipient?.name : swap.requester?.name}.
+                      </p>
+                      {swap.feedback && (
+                        <p className="mt-2 text-sm italic text-gray-600 dark:text-gray-400">
+                          Feedback: &quot;{swap.feedback}&quot;
+                        </p>
+                      )}
+                      {swap.rating && (
+                        <div className="mt-2 flex items-center text-sm">
+                          <StarIcon className="mr-1 h-4 w-4 fill-yellow-400 text-yellow-400" />
+                          <span>{swap.rating} / 5</span>
+                        </div>
+                      )}
+                    </Card>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }

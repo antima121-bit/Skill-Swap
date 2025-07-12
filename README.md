@@ -1,30 +1,82 @@
-# Skill swap platform
+# Skill Swap Platform
 
-*Automatically synced with your [v0.dev](https://v0.dev) deployments*
+This is a skill-swapping platform where users can connect to exchange skills and knowledge. Learn, teach, and grow together.
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/antimamishra113-gmailcoms-projects/v0-skill-swap-platform)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.dev-black?style=for-the-badge)](https://v0.dev/chat/projects/1R87tZpoAOS)
+## Features
 
-## Overview
+-   **User Profiles**: Create and manage your profile, showcasing skills you offer and skills you want to learn.
+-   **Search & Discovery**: Find other users based on skills, location, and availability.
+-   **Swap Requests**: Send and manage requests to initiate skill exchange sessions.
+-   **Real-time Chat**: Communicate with other users to coordinate swaps.
+-   **Reviews & Ratings**: Provide feedback on completed swaps to build trust within the community.
 
-This repository will stay in sync with your deployed chats on [v0.dev](https://v0.dev).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.dev](https://v0.dev).
+## Getting Started
 
-## Deployment
+### 1. Clone the repository
 
-Your project is live at:
+\`\`\`bash
+git clone https://github.com/your-username/skill-swap-platform.git
+cd skill-swap-platform
+\`\`\`
 
-**[https://vercel.com/antimamishra113-gmailcoms-projects/v0-skill-swap-platform](https://vercel.com/antimamishra113-gmailcoms-projects/v0-skill-swap-platform)**
+### 2. Install dependencies
 
-## Build your app
+\`\`\`bash
+npm install
+# or
+yarn install
+\`\`\`
 
-Continue building your app on:
+### 3. Set up Supabase
 
-**[https://v0.dev/chat/projects/1R87tZpoAOS](https://v0.dev/chat/projects/1R87tZpoAOS)**
+This project uses [Supabase](https://supabase.com/) for its backend (authentication and database).
 
-## How It Works
+1.  **Create a new Supabase project**: Go to [Supabase](https://app.supabase.com/) and create a new project.
+2.  **Get your API keys**:
+    -   Go to `Project Settings` -> `API`.
+    -   Copy your `Project URL` and `anon public` key.
+3.  **Configure environment variables**: Create a `.env.local` file in the root of your project and add the following:
 
-1. Create and modify your project using [v0.dev](https://v0.dev)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+    \`\`\`
+    NEXT_PUBLIC_SUPABASE_URL="YOUR_SUPABASE_URL"
+    NEXT_PUBLIC_SUPABASE_ANON_KEY="YOUR_SUPABASE_ANON_KEY"
+    \`\`\`
+
+### 4. Run SQL Migrations
+
+Execute the SQL scripts to set up your database schema and seed initial data.
+
+\`\`\`bash
+# You can run these scripts directly from the v0 UI if you are using it.
+# Otherwise, you can use the Supabase SQL Editor or a database client.
+
+# Run scripts/01-create-tables.sql first
+# Then run scripts/02-insert-sample-data.sql
+\`\`\`
+
+### 5. Run the development server
+
+\`\`\`bash
+npm run dev
+# or
+yarn dev
+\`\`\`
+
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+## Project Structure
+
+-   `app/`: Next.js App Router pages and layouts.
+-   `components/`: Reusable React components, including `shadcn/ui` components.
+-   `lib/`: Utility functions, Supabase client, and database interactions.
+-   `scripts/`: SQL scripts for database setup.
+-   `public/`: Static assets like images.
+
+## Learn More
+
+To learn more about Next.js, take a look at the following resources:
+
+-   [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+-   [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!

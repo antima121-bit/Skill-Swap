@@ -18,12 +18,12 @@ const mockUsers: User[] = [
     updated_at: "2024-01-01",
     avatar_url: "/images/person-avatar.png", // Updated avatar URL
     user_skills_offered: [
-      { skill_id: "react", skills: { name: "React" } },
-      { skill_id: "nodejs", skills: { name: "Node.js" } },
+      { skill_id: "react", skill: { name: "React" } },
+      { skill_id: "nodejs", skill: { name: "Node.js" } },
     ],
     user_skills_wanted: [
-      { skill_id: "ui-ux-design", skills: { name: "UI/UX Design" } },
-      { skill_id: "figma", skills: { name: "Figma" } },
+      { skill_id: "ui-ux-design", skill: { name: "UI/UX Design" } },
+      { skill_id: "figma", skill: { name: "Figma" } },
     ],
   },
   {
@@ -41,12 +41,12 @@ const mockUsers: User[] = [
     updated_at: "2024-01-01",
     avatar_url: "/images/person-avatar.png", // Updated avatar URL
     user_skills_offered: [
-      { skill_id: "photoshop", skills: { name: "Photoshop" } },
-      { skill_id: "illustrator", skills: { name: "Illustrator" } },
+      { skill_id: "photoshop", skill: { name: "Photoshop" } },
+      { skill_id: "illustrator", skill: { name: "Illustrator" } },
     ],
     user_skills_wanted: [
-      { skill_id: "python", skills: { name: "Python" } },
-      { skill_id: "data-analysis", skills: { name: "Data Analysis" } },
+      { skill_id: "python", skill: { name: "Python" } },
+      { skill_id: "data-analysis", skill: { name: "Data Analysis" } },
     ],
   },
   {
@@ -64,12 +64,12 @@ const mockUsers: User[] = [
     updated_at: "2024-01-01",
     avatar_url: "/images/person-avatar.png", // Updated avatar URL
     user_skills_offered: [
-      { skill_id: "digital-marketing", skills: { name: "Digital Marketing" } },
-      { skill_id: "seo", skills: { name: "SEO" } },
+      { skill_id: "digital-marketing", skill: { name: "Digital Marketing" } },
+      { skill_id: "seo", skill: { name: "SEO" } },
     ],
     user_skills_wanted: [
-      { skill_id: "web-development", skills: { name: "Web Development" } },
-      { skill_id: "javascript", skills: { name: "JavaScript" } },
+      { skill_id: "web-development", skill: { name: "Web Development" } },
+      { skill_id: "javascript", skill: { name: "JavaScript" } },
     ],
   },
   {
@@ -87,12 +87,12 @@ const mockUsers: User[] = [
     updated_at: "2024-01-01",
     avatar_url: "/images/person-avatar.png", // Updated avatar URL
     user_skills_offered: [
-      { skill_id: "python", skills: { name: "Python" } },
-      { skill_id: "machine-learning", skills: { name: "Machine Learning" } },
+      { skill_id: "python", skill: { name: "Python" } },
+      { skill_id: "machine-learning", skill: { name: "Machine Learning" } },
     ],
     user_skills_wanted: [
-      { skill_id: "mobile-development", skills: { name: "Mobile Development" } },
-      { skill_id: "flutter", skills: { name: "Flutter" } },
+      { skill_id: "mobile-development", skill: { name: "Mobile Development" } },
+      { skill_id: "flutter", skill: { name: "Flutter" } },
     ],
   },
   {
@@ -110,12 +110,12 @@ const mockUsers: User[] = [
     updated_at: "2024-01-01",
     avatar_url: "/images/person-avatar.png", // Updated avatar URL
     user_skills_offered: [
-      { skill_id: "video-editing", skills: { name: "Video Editing" } },
-      { skill_id: "after-effects", skills: { name: "After Effects" } },
+      { skill_id: "video-editing", skill: { name: "Video Editing" } },
+      { skill_id: "after-effects", skill: { name: "After Effects" } },
     ],
     user_skills_wanted: [
-      { skill_id: "3d-modeling", skills: { name: "3D Modeling" } },
-      { skill_id: "blender", skills: { name: "Blender" } },
+      { skill_id: "3d-modeling", skill: { name: "3D Modeling" } },
+      { skill_id: "blender", skill: { name: "Blender" } },
     ],
   },
   {
@@ -133,12 +133,12 @@ const mockUsers: User[] = [
     updated_at: "2024-01-01",
     avatar_url: "/images/person-avatar.png", // Updated avatar URL
     user_skills_offered: [
-      { skill_id: "project-management", skills: { name: "Project Management" } },
-      { skill_id: "agile", skills: { name: "Agile" } },
+      { skill_id: "project-management", skill: { name: "Project Management" } },
+      { skill_id: "agile", skill: { name: "Agile" } },
     ],
     user_skills_wanted: [
-      { skill_id: "product-design", skills: { name: "Product Design" } },
-      { skill_id: "user-research", skills: { name: "User Research" } },
+      { skill_id: "product-design", skill: { name: "Product Design" } },
+      { skill_id: "user-research", skill: { name: "User Research" } },
     ],
   },
 ]
@@ -255,8 +255,8 @@ export async function getCurrentUser(): Promise<User | null> {
       .select(
         `
         *,
-        user_skills_offered(skill_id, skills(name)),
-        user_skills_wanted(skill_id, skills(name))
+        user_skills_offered(skill_id, skill(name)),
+        user_skills_wanted(skill_id, skill(name))
       `,
       )
       .eq("id", user.id) // Use user.id directly
@@ -285,8 +285,8 @@ export async function getUserById(id: string): Promise<User | null> {
       .select(
         `
         *,
-        user_skills_offered(skill_id, skills(name)),
-        user_skills_wanted(skill_id, skills(name))
+        user_skills_offered(skill_id, skill(name)),
+        user_skills_wanted(skill_id, skill(name))
       `,
       )
       .eq("id", id)
@@ -641,8 +641,8 @@ export async function searchUsers(
           user.name.toLowerCase().includes(lowerCaseQuery) ||
           user.location?.toLowerCase().includes(lowerCaseQuery) ||
           user.bio?.toLowerCase().includes(lowerCaseQuery) ||
-          user.user_skills_offered?.some((us) => us.skills?.name.toLowerCase().includes(lowerCaseQuery)) ||
-          user.user_skills_wanted?.some((us) => us.skills?.name.toLowerCase().includes(lowerCaseQuery)),
+          user.user_skills_offered?.some((us) => us.skill?.name.toLowerCase().includes(lowerCaseQuery)) ||
+          user.user_skills_wanted?.some((us) => us.skill?.name.toLowerCase().includes(lowerCaseQuery)),
       )
     }
 
@@ -672,8 +672,8 @@ export async function searchUsers(
       .select(
         `
         *,
-        user_skills_offered(skill_id, skills(name)),
-        user_skills_wanted(skill_id, skills(name))
+        user_skills_offered(skill_id, skill(name)),
+        user_skills_wanted(skill_id, skill(name))
       `,
       )
       .eq("is_public", true)
@@ -709,8 +709,8 @@ export async function searchUsers(
     if (query) {
       const lowerCaseQuery = query.toLowerCase()
       finalUsers = finalUsers.filter((user) => {
-        const offeredSkills = user.user_skills_offered?.map((us) => us.skills?.name.toLowerCase()) || []
-        const wantedSkills = user.user_skills_wanted?.map((us) => us.skills?.name.toLowerCase()) || []
+        const offeredSkills = user.user_skills_offered?.map((us) => us.skill?.name.toLowerCase()) || []
+        const wantedSkills = user.user_skills_wanted?.map((us) => us.skill?.name.toLowerCase()) || []
 
         return (
           user.name.toLowerCase().includes(lowerCaseQuery) ||
@@ -778,8 +778,8 @@ export async function getSkills(): Promise<Skill[]> {
 }
 
 export async function getUserSkills(userId: string): Promise<{
-  offered: { skill_id: string; skills?: { name: string } }[]
-  wanted: { skill_id: string; skills?: { name: string } }[]
+  offered: { skill_id: string; skill?: { name: string } }[]
+  wanted: { skill_id: string; skill?: { name: string } }[]
 }> {
   if (!isSupabaseConfigured()) {
     const user = mockUsers.find((u) => u.id === userId)
@@ -795,7 +795,7 @@ export async function getUserSkills(userId: string): Promise<{
       .select(
         `
         skill_id,
-        skills(name)
+        skill(name)
       `,
       )
       .eq("user_id", userId)
@@ -805,7 +805,7 @@ export async function getUserSkills(userId: string): Promise<{
       .select(
         `
         skill_id,
-        skills(name)
+        skill(name)
       `,
       )
       .eq("user_id", userId)

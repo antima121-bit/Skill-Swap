@@ -3,181 +3,131 @@
 import type React from "react"
 
 import { useState, useEffect, useRef } from "react"
-import { ArrowLeft, Send, Phone, Video } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent } from "@/components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Logo } from "@/components/logo"
-import Link from "next/link"
 import { useParams } from "next/navigation"
-import { getCurrentUser, getUserById, getMessages, sendMessage } from "@/lib/database"
-import type { User, Message } from "@/lib/supabase"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { SendIcon } from "lucide-react"
+import { getMessages, sendMessage, getUserById, getCurrentUser } from "@/lib/database"
+import type { Message, User } from "@/lib/supabase"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export default function ChatPage() {
-  const params = useParams()
-  const userId = params.userId as string
-  const [currentUser, setCurrentUser] = useState<User | null>(null)
-  const [otherUser, setOtherUser] = useState<User | null>(null)
+  const { userId: otherUserId } = useParams<{ userId: string }>()
   const [messages, setMessages] = useState<Message[]>([])
   const [newMessage, setNewMessage] = useState("")
+  const [currentUser, setCurrentUser] = useState<User | null>(null)
+  const [otherUser, setOtherUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    loadData()
-  }, [userId])
+    const loadChat = async () => {
+      setLoading(true)
+      const current = await getCurrentUser()
+      setCurrentUser(current)
 
-  useEffect(() => {
-    scrollToBottom()
-  }, [messages])
-
-  const loadData = async () => {
-    try {
-      const [current, other] = await Promise.all([getCurrentUser(), getUserById(userId)])
-
-      if (current && other) {
-        setCurrentUser(current)
-        setOtherUser(other)
-
-        const messageData = await getMessages(current.id, userId)
-        setMessages(messageData)
+      if (current && otherUserId) {
+        const fetchedMessages = await getMessages(current.id, otherUserId)
+        setMessages(fetchedMessages)
+        const fetchedOtherUser = await getUserById(otherUserId)
+        setOtherUser(fetchedOtherUser)
       }
-    } catch (error) {
-      console.error("Error loading chat data:", error)
-    } finally {
       setLoading(false)
     }
-  }
+    loadChat()
+  }, [otherUserId])
 
-  const scrollToBottom = () => {
+  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }
+  }, [messages])
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newMessage.trim() || !currentUser) return
+    if (newMessage.trim() === "" || !currentUser || !otherUserId) return
 
-    try {
-      const message = await sendMessage(userId, newMessage.trim())
-      if (message) {
-        setMessages((prev) => [...prev, message])
-        setNewMessage("")
-      }
-    } catch (error) {
-      console.error("Error sending message:", error)
+    const sentMessage = await sendMessage(otherUserId, newMessage)
+    if (sentMessage) {
+      setMessages((prevMessages) => [...prevMessages, sentMessage])
+      setNewMessage("")
     }
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-green-900 to-black flex items-center justify-center">
-        <div className="text-white font-bold">Loading chat...</div>
+      <div className="flex h-screen flex-col items-center justify-center p-4">
+        <Card className="w-full max-w-2xl">
+          <CardHeader>
+            <Skeleton className="h-8 w-3/4" />
+          </CardHeader>
+          <CardContent className="flex h-[500px] flex-col justify-end space-y-4 overflow-hidden p-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className={`flex ${i % 2 === 0 ? "justify-start" : "justify-end"}`}>
+                <Skeleton className="h-12 w-2/3 rounded-lg" />
+              </div>
+            ))}
+            <div className="flex items-center space-x-2">
+              <Skeleton className="h-10 flex-grow" />
+              <Skeleton className="h-10 w-10" />
+            </div>
+          </CardContent>
+        </Card>
       </div>
     )
   }
 
-  if (!otherUser) {
+  if (!currentUser || !otherUser) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-green-900 to-black flex items-center justify-center">
-        <div className="text-white font-bold">User not found</div>
+      <div className="flex h-screen items-center justify-center">
+        <p className="text-gray-500 dark:text-gray-400">User not found or not logged in.</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-green-900 to-black flex flex-col">
-      {/* Navigation */}
-      <nav className="backdrop-blur-md bg-black/30 border-b border-green-500/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/swaps">
-              <Button variant="ghost" className="text-white hover:bg-green-500/20 font-black">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Swaps
-              </Button>
-            </Link>
-            <div className="flex items-center space-x-3">
-              <Logo className="w-10 h-10" />
-              <span className="text-white font-black text-xl tracking-wide">Skill Swap India</span>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Button variant="ghost" className="text-white hover:bg-green-500/20 font-black">
-                <Phone className="w-4 h-4" />
-              </Button>
-              <Button variant="ghost" className="text-white hover:bg-green-500/20 font-black">
-                <Video className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      {/* Chat Header */}
-      <div className="backdrop-blur-md bg-black/20 border-b border-green-500/30 p-4">
-        <div className="max-w-4xl mx-auto flex items-center space-x-4">
-          <Avatar className="w-12 h-12 ring-2 ring-green-500/30">
-            <AvatarImage src={otherUser.avatar_url || "/placeholder.svg"} alt={otherUser.name} />
-            <AvatarFallback className="bg-gradient-to-r from-green-500 to-emerald-600 text-white font-black">
-              {otherUser.name
-                .split(" ")
-                .map((n) => n[0])
-                .join("")}
-            </AvatarFallback>
+    <div className="flex min-h-screen flex-col items-center p-4">
+      <Card className="flex h-[calc(100vh-32px)] w-full max-w-2xl flex-col">
+        <CardHeader className="flex flex-row items-center space-x-4 border-b p-4">
+          <Avatar className="h-10 w-10">
+            <AvatarImage src={otherUser.avatar_url || "/placeholder-user.jpg"} />
+            <AvatarFallback>{otherUser.name.charAt(0)}</AvatarFallback>
           </Avatar>
-          <div>
-            <h2 className="text-white font-black text-lg">{otherUser.name}</h2>
-            <p className="text-gray-300 font-bold text-sm">{otherUser.location}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4">
-        <div className="max-w-4xl mx-auto space-y-4">
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${message.sender_id === currentUser?.id ? "justify-end" : "justify-start"}`}
-            >
-              <Card
-                className={`max-w-xs lg:max-w-md ${
-                  message.sender_id === currentUser?.id
-                    ? "bg-gradient-to-r from-green-500 to-emerald-600"
-                    : "bg-black/30 border-green-500/30"
+          <CardTitle className="text-xl">{otherUser.name}</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-1 flex-col space-y-4 overflow-y-auto p-4">
+          {messages.map((msg) => (
+            <div key={msg.id} className={`flex ${msg.sender_id === currentUser.id ? "justify-end" : "justify-start"}`}>
+              <div
+                className={`max-w-[70%] rounded-lg p-3 ${
+                  msg.sender_id === currentUser.id
+                    ? "bg-blue-500 text-white dark:bg-blue-600"
+                    : "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
                 }`}
               >
-                <CardContent className="p-3">
-                  <p className="text-white font-bold text-sm">{message.content}</p>
-                  <p className="text-gray-300 text-xs mt-1">{new Date(message.created_at).toLocaleTimeString()}</p>
-                </CardContent>
-              </Card>
+                <p>{msg.content}</p>
+                <span className="mt-1 block text-xs opacity-75">
+                  {new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                </span>
+              </div>
             </div>
           ))}
           <div ref={messagesEndRef} />
-        </div>
-      </div>
-
-      {/* Message Input */}
-      <div className="backdrop-blur-md bg-black/20 border-t border-green-500/30 p-4">
-        <div className="max-w-4xl mx-auto">
-          <form onSubmit={handleSendMessage} className="flex space-x-2">
-            <Input
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              placeholder="Type your message..."
-              className="flex-1 bg-black/30 backdrop-blur-md border-green-500/30 text-white placeholder-gray-400 rounded-xl font-bold"
-            />
-            <Button
-              type="submit"
-              className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 font-black"
-              disabled={!newMessage.trim()}
-            >
-              <Send className="w-4 h-4" />
-            </Button>
-          </form>
-        </div>
-      </div>
+        </CardContent>
+        <form onSubmit={handleSendMessage} className="flex items-center space-x-2 border-t p-4">
+          <Input
+            type="text"
+            placeholder="Type your message..."
+            className="flex-1"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+          />
+          <Button type="submit" disabled={newMessage.trim() === ""}>
+            <SendIcon className="h-5 w-5" />
+            <span className="sr-only">Send message</span>
+          </Button>
+        </form>
+      </Card>
     </div>
   )
 }

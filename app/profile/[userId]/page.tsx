@@ -1,205 +1,216 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { ArrowLeft, MessageCircle, Star, MapPin } from "lucide-react"
+import { useParams } from "next/navigation"
+import Link from "next/link"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Logo } from "@/components/logo"
-import Link from "next/link"
-import { useParams, useRouter } from "next/navigation"
-import { getUserById, getUserSkills, getCurrentUser } from "@/lib/database"
-import type { User } from "@/lib/supabase"
+import { MapPinIcon, StarIcon, MessageSquareIcon, CalendarIcon } from "lucide-react"
+import { getUserById, getCurrentUser, getSwapRequests } from "@/lib/database"
+import type { User, SwapRequest, ActiveSwap } from "@/lib/supabase"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export default function UserProfilePage() {
-  const params = useParams()
-  const router = useRouter()
-  const userId = params.userId as string
+  const { userId } = useParams<{ userId: string }>()
   const [user, setUser] = useState<User | null>(null)
   const [currentUser, setCurrentUser] = useState<User | null>(null)
-  const [skills, setSkills] = useState<{ offered: any[]; wanted: any[] }>({ offered: [], wanted: [] })
   const [loading, setLoading] = useState(true)
+  const [swapRequests, setSwapRequests] = useState<{
+    pending: SwapRequest[]
+    active: ActiveSwap[]
+    completed: SwapRequest[]
+  } | null>(null)
 
   useEffect(() => {
+    const loadUserData = async () => {
+      setLoading(true)
+      const fetchedUser = await getUserById(userId)
+      setUser(fetchedUser)
+      const current = await getCurrentUser()
+      setCurrentUser(current)
+
+      if (current) {
+        const fetchedSwapRequests = await getSwapRequests(current.id)
+        setSwapRequests(fetchedSwapRequests)
+      }
+      setLoading(false)
+    }
     loadUserData()
   }, [userId])
 
-  const loadUserData = async () => {
-    try {
-      const [userData, currentUserData, skillsData] = await Promise.all([
-        getUserById(userId),
-        getCurrentUser(),
-        getUserSkills(userId),
-      ])
-
-      setUser(userData)
-      setCurrentUser(currentUserData)
-      setSkills(skillsData)
-    } catch (error) {
-      console.error("Error loading user data:", error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleSendMessage = () => {
-    if (currentUser && user) {
-      router.push(`/chat/${user.id}`)
-    }
-  }
-
-  const handleSendSwapRequest = () => {
-    if (currentUser && user) {
-      router.push(`/swap-request/${user.id}`)
-    }
-  }
-
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-green-900 to-black flex items-center justify-center">
-        <div className="text-white font-bold">Loading profile...</div>
+      <div className="flex min-h-screen flex-col items-center p-4">
+        <Card className="w-full max-w-4xl">
+          <CardHeader className="flex flex-col items-center space-y-4 p-6">
+            <Skeleton className="h-32 w-32 rounded-full" />
+            <Skeleton className="h-8 w-1/2" />
+            <Skeleton className="h-6 w-3/4" />
+            <Skeleton className="h-5 w-1/3" />
+            <Skeleton className="h-5 w-1/4" />
+            <div className="flex gap-2">
+              <Skeleton className="h-8 w-24" />
+              <Skeleton className="h-8 w-24" />
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-8 p-6">
+            <div className="space-y-2">
+              <Skeleton className="h-6 w-1/4" />
+              <div className="flex flex-wrap gap-2">
+                <Skeleton className="h-8 w-20" />
+                <Skeleton className="h-8 w-20" />
+                <Skeleton className="h-8 w-20" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-6 w-1/4" />
+              <div className="flex flex-wrap gap-2">
+                <Skeleton className="h-8 w-20" />
+                <Skeleton className="h-8 w-20" />
+                <Skeleton className="h-8 w-20" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-6 w-1/4" />
+              <Skeleton className="h-24 w-full" />
+            </div>
+          </CardContent>
+        </Card>
       </div>
     )
   }
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-green-900 to-black flex items-center justify-center">
-        <div className="text-white font-bold">User not found</div>
+      <div className="flex h-screen items-center justify-center">
+        <p className="text-gray-500 dark:text-gray-400">User not found.</p>
       </div>
     )
   }
 
+  const isCurrentUserProfile = currentUser?.id === user.id
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-green-900 to-black">
-      {/* Navigation */}
-      <nav className="backdrop-blur-md bg-black/30 border-b border-green-500/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Button
-              variant="ghost"
-              className="text-white hover:bg-green-500/20 font-black"
-              onClick={() => router.back()}
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
-            </Button>
-            <div className="flex items-center space-x-3">
-              <Logo className="w-10 h-10" />
-              <span className="text-white font-black text-xl tracking-wide">Skill Swap India</span>
+    <div className="flex min-h-screen flex-col items-center p-4">
+      <Card className="w-full max-w-4xl">
+        <CardHeader className="flex flex-col items-center space-y-4 p-6">
+          <Avatar className="h-32 w-32">
+            <AvatarImage src={user.avatar_url || "/placeholder-user.jpg"} />
+            <AvatarFallback className="text-5xl">{user.name.charAt(0)}</AvatarFallback>
+          </Avatar>
+          <CardTitle className="text-3xl font-bold">{user.name}</CardTitle>
+          <p className="text-center text-gray-500 dark:text-gray-400">{user.bio}</p>
+          <div className="flex items-center space-x-4 text-gray-500 dark:text-gray-400">
+            <div className="flex items-center">
+              <MapPinIcon className="mr-1 h-4 w-4" />
+              <span>{user.location}</span>
             </div>
-            <div className="flex items-center space-x-4">
-              <Link href="/search">
-                <Button variant="ghost" className="text-white hover:bg-green-500/20 font-black">
-                  Browse
-                </Button>
-              </Link>
+            <div className="flex items-center">
+              <StarIcon className="mr-1 h-4 w-4 fill-yellow-400 text-yellow-400" />
+              <span>
+                {user.rating} ({user.completed_swaps} swaps)
+              </span>
             </div>
           </div>
-        </div>
-      </nav>
-
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Profile Header */}
-        <Card className="backdrop-blur-md bg-black/30 border-green-500/30 rounded-2xl shadow-xl mb-8">
-          <CardContent className="p-8">
-            <div className="flex flex-col md:flex-row items-start md:items-center space-y-6 md:space-y-0 md:space-x-8">
-              {/* Avatar */}
-              <Avatar className="w-32 h-32 ring-4 ring-green-500/30">
-                <AvatarImage src={user.avatar_url || "/placeholder.svg"} alt={user.name} />
-                <AvatarFallback className="bg-gradient-to-r from-green-500 to-emerald-600 text-white text-2xl font-black">
-                  {user.name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")}
-                </AvatarFallback>
-              </Avatar>
-
-              {/* Profile Info */}
-              <div className="flex-1">
-                <h1 className="text-3xl font-black text-white mb-2">{user.name}</h1>
-                <div className="flex items-center space-x-4 text-gray-300 mb-4 font-bold">
-                  <div className="flex items-center space-x-1">
-                    <MapPin className="w-4 h-4" />
-                    <span>{user.location}</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                    <span>{user.rating}</span>
-                  </div>
-                  <span>{user.completed_swaps} swaps completed</span>
-                  <span className="text-green-400">{user.hourly_rate}/hour</span>
-                </div>
-                <p className="text-gray-300 mb-4 font-bold">{user.bio}</p>
-                <p className="text-gray-300 font-bold">Available: {user.availability}</p>
-              </div>
-
-              {/* Action Buttons */}
-              {currentUser && currentUser.id !== user.id && (
-                <div className="flex flex-col space-y-2">
-                  <Button
-                    onClick={handleSendSwapRequest}
-                    className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 font-black"
-                  >
-                    Send Swap Request
+          <div className="flex gap-2">
+            {!isCurrentUserProfile && (
+              <>
+                <Link href={`/swap-request/${user.id}`} passHref>
+                  <Button>
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    Swap Skills
                   </Button>
-                  <Button
-                    onClick={handleSendMessage}
-                    variant="outline"
-                    className="border-green-500/30 text-white hover:bg-green-500/20 font-black bg-transparent"
-                  >
-                    <MessageCircle className="w-4 h-4 mr-2" />
+                </Link>
+                <Link href={`/chat/${user.id}`} passHref>
+                  <Button variant="outline">
+                    <MessageSquareIcon className="mr-2 h-4 w-4" />
                     Message
                   </Button>
-                </div>
+                </Link>
+              </>
+            )}
+            {isCurrentUserProfile && (
+              <Link href="/profile/edit" passHref>
+                <Button variant="outline">Edit Profile</Button>
+              </Link>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-8 p-6">
+          <div>
+            <h3 className="mb-3 text-2xl font-semibold">Skills Offered</h3>
+            <div className="flex flex-wrap gap-2">
+              {user.user_skills_offered?.length === 0 ? (
+                <p className="text-gray-500 dark:text-gray-400">No skills offered.</p>
+              ) : (
+                user.user_skills_offered?.map((us) => (
+                  <Badge key={us.skill_id} variant="secondary">
+                    {us.skills?.name}
+                  </Badge>
+                ))
               )}
             </div>
-          </CardContent>
-        </Card>
-
-        <div className="grid gap-8 md:grid-cols-2">
-          {/* Skills Offered */}
-          <Card className="backdrop-blur-md bg-black/30 border-green-500/30 rounded-2xl shadow-xl">
-            <CardHeader>
-              <CardTitle className="text-white font-black">Skills Offered</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-2">
-                {skills.offered.map((userSkill, index) => (
-                  <Badge
-                    key={index}
-                    className="bg-green-500/20 text-green-300 border-green-500/30 hover:bg-green-500/30 font-black"
-                  >
-                    {userSkill.skill.name}
+          </div>
+          <div>
+            <h3 className="mb-3 text-2xl font-semibold">Skills Wanted</h3>
+            <div className="flex flex-wrap gap-2">
+              {user.user_skills_wanted?.length === 0 ? (
+                <p className="text-gray-500 dark:text-gray-400">No skills wanted.</p>
+              ) : (
+                user.user_skills_wanted?.map((us) => (
+                  <Badge key={us.skill_id} variant="secondary">
+                    {us.skills?.name}
                   </Badge>
-                ))}
-                {skills.offered.length === 0 && <p className="text-gray-400 font-bold">No skills listed</p>}
+                ))
+              )}
+            </div>
+          </div>
+          <div>
+            <h3 className="mb-3 text-2xl font-semibold">Availability</h3>
+            <p className="text-gray-700 dark:text-gray-300">{user.availability || "Not specified"}</p>
+          </div>
+          <div>
+            <h3 className="mb-3 text-2xl font-semibold">Hourly Rate</h3>
+            <p className="text-gray-700 dark:text-gray-300">{user.hourly_rate || "Not specified"}</p>
+          </div>
+          {isCurrentUserProfile && swapRequests && (
+            <div>
+              <h3 className="mb-3 text-2xl font-semibold">My Swap History</h3>
+              <div className="space-y-4">
+                {swapRequests.completed.length === 0 ? (
+                  <p className="text-gray-500 dark:text-gray-400">No completed swaps yet.</p>
+                ) : (
+                  swapRequests.completed.map((swap) => (
+                    <Card key={swap.id} className="p-4">
+                      <p className="text-sm text-gray-500">
+                        {new Date(swap.updated_at).toLocaleDateString()} - Completed
+                      </p>
+                      <p className="mt-2">
+                        You {swap.requester_id === user.id ? "offered" : "received"} {swap.skill_offered?.name} for{" "}
+                        {swap.skill_wanted?.name} with{" "}
+                        {swap.requester_id === user.id ? swap.recipient?.name : swap.requester?.name}.
+                      </p>
+                      {swap.feedback && (
+                        <p className="mt-2 text-sm italic text-gray-600 dark:text-gray-400">
+                          Feedback: &quot;{swap.feedback}&quot;
+                        </p>
+                      )}
+                      {swap.rating && (
+                        <div className="mt-2 flex items-center text-sm">
+                          <StarIcon className="mr-1 h-4 w-4 fill-yellow-400 text-yellow-400" />
+                          <span>{swap.rating} / 5</span>
+                        </div>
+                      )}
+                    </Card>
+                  ))
+                )}
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Skills Wanted */}
-          <Card className="backdrop-blur-md bg-black/30 border-green-500/30 rounded-2xl shadow-xl">
-            <CardHeader>
-              <CardTitle className="text-white font-black">Skills Wanted</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-2">
-                {skills.wanted.map((userSkill, index) => (
-                  <Badge
-                    key={index}
-                    className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/30 font-black"
-                  >
-                    {userSkill.skill.name}
-                  </Badge>
-                ))}
-                {skills.wanted.length === 0 && <p className="text-gray-400 font-bold">No skills listed</p>}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }

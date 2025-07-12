@@ -31,8 +31,8 @@ export interface User {
   completed_swaps: number
   created_at: string
   updated_at: string
-  user_skills_offered?: { skill_id: string; skills?: { name: string } }[] // Updated type
-  user_skills_wanted?: { skill_id: string; skills?: { name: string } }[] // Updated type
+  user_skills_offered?: { skill_id: string; skill?: { name: string } }[] // Updated type
+  user_skills_wanted?: { skill_id: string; skill?: { name: string } }[] // Updated type
 }
 
 export interface Skill {
