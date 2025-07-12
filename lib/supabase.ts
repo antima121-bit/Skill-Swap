@@ -1,88 +1,126 @@
-import { createClient } from "@supabase/supabase-js"
+import { createClient } from '@supabase/supabase-js'
 
-// Use fallback values for development/preview
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co"
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder-key"
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-// Create client with error handling
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true, // Enable session persistence
-  },
-})
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
-// Check if Supabase is properly configured
-export const isSupabaseConfigured = () => {
-  return process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-}
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
 
-// Types
-export interface User {
-  id: string
-  email: string
-  name: string
-  avatar_url?: string
-  location?: string
-  bio?: string
-  hourly_rate?: string
-  availability?: string
-  is_public: boolean
-  rating: number
-  completed_swaps: number
-  created_at: string
-  updated_at: string
-  user_skills_offered?: { skill_id: string; skill?: { name: string } }[] // Updated type
-  user_skills_wanted?: { skill_id: string; skill?: { name: string } }[] // Updated type
-}
-
-export interface Skill {
-  id: string
-  name: string
-  category?: string
-}
-
-export interface SwapRequest {
-  id: string
-  requester_id: string
-  recipient_id: string
-  skill_offered_id: string
-  skill_wanted_id: string
-  message?: string
-  status: "pending" | "accepted" | "rejected" | "cancelled"
-  hourly_rate?: string
-  created_at: string
-  updated_at: string
-  requester?: User
-  recipient?: User
-  skill_offered?: Skill
-  skill_wanted?: Skill
-}
-
-export interface Message {
-  id: string
-  sender_id: string
-  recipient_id: string
-  swap_request_id?: string
-  content: string
-  is_read: boolean
-  created_at: string
-  sender?: User
-}
-
-export interface ActiveSwap {
-  id: string
-  swap_request_id: string
-  user1_id: string
-  user2_id: string
-  skill1_id: string
-  skill2_id: string
-  status: "active" | "completed" | "cancelled"
-  next_session?: string
-  total_sessions: number
-  created_at: string
-  updated_at: string
-  user1?: User // Add user relations
-  user2?: User // Add user relations
-  skill1?: Skill // Add skill relations
-  skill2?: Skill // Add skill relations
+export interface Database {
+  public: {
+    Tables: {
+      profiles: {
+        Row: {
+          id: string
+          created_at: string
+          updated_at: string
+          username: string | null
+          full_name: string | null
+          avatar_url: string | null
+          website: string | null
+          bio: string | null
+          location: string | null
+          hourly_rate: number | null
+          rating: number | null
+          completed_swaps: number
+        }
+        Insert: {
+          id: string
+          created_at?: string
+          updated_at?: string
+          username?: string | null
+          full_name?: string | null
+          avatar_url?: string | null
+          website?: string | null
+          bio?: string | null
+          location?: string | null
+          hourly_rate?: number | null
+          rating?: number | null
+          completed_swaps?: number
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          updated_at?: string
+          username?: string | null
+          full_name?: string | null
+          avatar_url?: string | null
+          website?: string | null
+          bio?: string | null
+          location?: string | null
+          hourly_rate?: number | null
+          rating?: number | null
+          completed_swaps?: number
+        }
+      }
+      skills: {
+        Row: {
+          id: string
+          created_at: string
+          name: string
+          category: string | null
+          description: string | null
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          name: string
+          category?: string | null
+          description?: string | null
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          name?: string
+          category?: string | null
+          description?: string | null
+        }
+      }
+      user_skills: {
+        Row: {
+          id: string
+          created_at: string
+          user_id: string
+          skill_id: string
+          proficiency_level: number
+          is_offering: boolean
+          is_learning: boolean
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          user_id: string
+          skill_id: string
+          proficiency_level?: number
+          is_offering?: boolean
+          is_learning?: boolean
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          user_id?: string
+          skill_id?: string
+          proficiency_level?: number
+          is_offering?: boolean
+          is_learning?: boolean
+        }
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+  }
 }

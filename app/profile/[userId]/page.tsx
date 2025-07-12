@@ -1,80 +1,65 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useParams } from "next/navigation"
-import Link from "next/link"
+import { useParams, useRouter } from "next/navigation"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { MapPinIcon, StarIcon, MessageSquareIcon, CalendarIcon } from "lucide-react"
-import { getUserById, getCurrentUser, getSwapRequests } from "@/lib/database"
-import type { User, SwapRequest, ActiveSwap } from "@/lib/supabase"
-import { Skeleton } from "@/components/ui/skeleton"
+import { MapPin, Star, Award, MessageSquare } from "lucide-react"
+import { getCurrentUser, getUserById } from "@/lib/database"
+
+// Reuse the mock skills from browse page
+const SKILLS = [
+  "React", "Node.js", "Python", "JavaScript", "TypeScript",
+  "UI/UX Design", "Digital Marketing", "Content Writing",
+  "Data Analysis", "Machine Learning"
+]
 
 export default function UserProfilePage() {
   const { userId } = useParams<{ userId: string }>()
-  const [user, setUser] = useState<User | null>(null)
-  const [currentUser, setCurrentUser] = useState<User | null>(null)
+  const [user, setUser] = useState<any>(null)
+  const [currentUser, setCurrentUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const [swapRequests, setSwapRequests] = useState<{
-    pending: SwapRequest[]
-    active: ActiveSwap[]
-    completed: SwapRequest[]
-  } | null>(null)
+  const router = useRouter()
 
   useEffect(() => {
-    const loadUserData = async () => {
+    const loadData = async () => {
       setLoading(true)
-      const fetchedUser = await getUserById(userId)
-      setUser(fetchedUser)
-      const current = await getCurrentUser()
-      setCurrentUser(current)
-
-      if (current) {
-        const fetchedSwapRequests = await getSwapRequests(current.id)
-        setSwapRequests(fetchedSwapRequests)
+      try {
+        // Get current user
+        const current = await getCurrentUser()
+        setCurrentUser(current)
+        
+        // Get profile user data
+        const profileUser = await getUserById(userId as string)
+        if (profileUser) {
+          setUser(profileUser)
+        } else {
+          console.error("User not found")
+        }
+      } catch (error) {
+        console.error("Error loading user:", error)
       }
       setLoading(false)
     }
-    loadUserData()
+
+    loadData()
   }, [userId])
 
   if (loading) {
     return (
-      <div className="flex min-h-screen flex-col items-center p-4">
-        <Card className="w-full max-w-4xl">
-          <CardHeader className="flex flex-col items-center space-y-4 p-6">
-            <Skeleton className="h-32 w-32 rounded-full" />
-            <Skeleton className="h-8 w-1/2" />
-            <Skeleton className="h-6 w-3/4" />
-            <Skeleton className="h-5 w-1/3" />
-            <Skeleton className="h-5 w-1/4" />
-            <div className="flex gap-2">
-              <Skeleton className="h-8 w-24" />
-              <Skeleton className="h-8 w-24" />
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-8 p-6">
-            <div className="space-y-2">
-              <Skeleton className="h-6 w-1/4" />
-              <div className="flex flex-wrap gap-2">
-                <Skeleton className="h-8 w-20" />
-                <Skeleton className="h-8 w-20" />
-                <Skeleton className="h-8 w-20" />
+      <div className="container mx-auto px-4 py-8">
+        <Card>
+          <CardContent className="p-6">
+            <div className="animate-pulse space-y-4">
+              <div className="flex items-center space-x-4">
+                <div className="h-16 w-16 rounded-full bg-secondary" />
+                <div className="space-y-2">
+                  <div className="h-4 w-32 bg-secondary rounded" />
+                  <div className="h-3 w-24 bg-secondary rounded" />
+                </div>
               </div>
-            </div>
-            <div className="space-y-2">
-              <Skeleton className="h-6 w-1/4" />
-              <div className="flex flex-wrap gap-2">
-                <Skeleton className="h-8 w-20" />
-                <Skeleton className="h-8 w-20" />
-                <Skeleton className="h-8 w-20" />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Skeleton className="h-6 w-1/4" />
-              <Skeleton className="h-24 w-full" />
             </div>
           </CardContent>
         </Card>
@@ -84,133 +69,138 @@ export default function UserProfilePage() {
 
   if (!user) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <p className="text-gray-500 dark:text-gray-400">User not found.</p>
+      <div className="container mx-auto px-4 py-8">
+        <Card>
+          <CardContent className="p-6 text-center">
+            <h2 className="text-xl font-semibold">User not found</h2>
+            <p className="text-muted-foreground mt-2">The user you're looking for doesn't exist.</p>
+            <Button onClick={() => router.push("/browse")} className="mt-4">
+              Browse Members
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     )
   }
 
-  const isCurrentUserProfile = currentUser?.id === user.id
-
   return (
-    <div className="flex min-h-screen flex-col items-center p-4">
-      <Card className="w-full max-w-4xl">
-        <CardHeader className="flex flex-col items-center space-y-4 p-6">
-          <Avatar className="h-32 w-32">
-            <AvatarImage src={user.avatar_url || "/placeholder-user.jpg"} />
-            <AvatarFallback className="text-5xl">{user.name.charAt(0)}</AvatarFallback>
-          </Avatar>
-          <CardTitle className="text-3xl font-bold">{user.name}</CardTitle>
-          <p className="text-center text-gray-500 dark:text-gray-400">{user.bio}</p>
-          <div className="flex items-center space-x-4 text-gray-500 dark:text-gray-400">
-            <div className="flex items-center">
-              <MapPinIcon className="mr-1 h-4 w-4" />
-              <span>{user.location}</span>
-            </div>
-            <div className="flex items-center">
-              <StarIcon className="mr-1 h-4 w-4 fill-yellow-400 text-yellow-400" />
-              <span>
-                {user.rating} ({user.completed_swaps} swaps)
-              </span>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            {!isCurrentUserProfile && (
-              <>
-                <Link href={`/swap-request/${user.id}`} passHref>
-                  <Button>
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    Swap Skills
-                  </Button>
-                </Link>
-                <Link href={`/chat/${user.id}`} passHref>
-                  <Button variant="outline">
-                    <MessageSquareIcon className="mr-2 h-4 w-4" />
-                    Message
-                  </Button>
-                </Link>
-              </>
-            )}
-            {isCurrentUserProfile && (
-              <Link href="/profile/edit" passHref>
-                <Button variant="outline">Edit Profile</Button>
-              </Link>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-8 p-6">
-          <div>
-            <h3 className="mb-3 text-2xl font-semibold">Skills Offered</h3>
-            <div className="flex flex-wrap gap-2">
-              {user.user_skills_offered?.length === 0 ? (
-                <p className="text-gray-500 dark:text-gray-400">No skills offered.</p>
-              ) : (
-                user.user_skills_offered?.map((us) => (
-                  <Badge key={us.skill_id} variant="secondary">
-                    {us.skills?.name}
-                  </Badge>
-                ))
-              )}
-            </div>
-          </div>
-          <div>
-            <h3 className="mb-3 text-2xl font-semibold">Skills Wanted</h3>
-            <div className="flex flex-wrap gap-2">
-              {user.user_skills_wanted?.length === 0 ? (
-                <p className="text-gray-500 dark:text-gray-400">No skills wanted.</p>
-              ) : (
-                user.user_skills_wanted?.map((us) => (
-                  <Badge key={us.skill_id} variant="secondary">
-                    {us.skills?.name}
-                  </Badge>
-                ))
-              )}
-            </div>
-          </div>
-          <div>
-            <h3 className="mb-3 text-2xl font-semibold">Availability</h3>
-            <p className="text-gray-700 dark:text-gray-300">{user.availability || "Not specified"}</p>
-          </div>
-          <div>
-            <h3 className="mb-3 text-2xl font-semibold">Hourly Rate</h3>
-            <p className="text-gray-700 dark:text-gray-300">{user.hourly_rate || "Not specified"}</p>
-          </div>
-          {isCurrentUserProfile && swapRequests && (
-            <div>
-              <h3 className="mb-3 text-2xl font-semibold">My Swap History</h3>
-              <div className="space-y-4">
-                {swapRequests.completed.length === 0 ? (
-                  <p className="text-gray-500 dark:text-gray-400">No completed swaps yet.</p>
-                ) : (
-                  swapRequests.completed.map((swap) => (
-                    <Card key={swap.id} className="p-4">
-                      <p className="text-sm text-gray-500">
-                        {new Date(swap.updated_at).toLocaleDateString()} - Completed
-                      </p>
-                      <p className="mt-2">
-                        You {swap.requester_id === user.id ? "offered" : "received"} {swap.skill_offered?.name} for{" "}
-                        {swap.skill_wanted?.name} with{" "}
-                        {swap.requester_id === user.id ? swap.recipient?.name : swap.requester?.name}.
-                      </p>
-                      {swap.feedback && (
-                        <p className="mt-2 text-sm italic text-gray-600 dark:text-gray-400">
-                          Feedback: &quot;{swap.feedback}&quot;
-                        </p>
-                      )}
-                      {swap.rating && (
-                        <div className="mt-2 flex items-center text-sm">
-                          <StarIcon className="mr-1 h-4 w-4 fill-yellow-400 text-yellow-400" />
-                          <span>{swap.rating} / 5</span>
-                        </div>
-                      )}
-                    </Card>
-                  ))
-                )}
+    <div className="container mx-auto px-4 py-8">
+      <Card className="mb-6">
+        <CardContent className="p-6">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center space-x-4">
+              <Avatar className="h-16 w-16">
+                <AvatarImage src={user.avatar_url} />
+                <AvatarFallback>
+                  {user.full_name?.charAt(0) || user.username?.charAt(0) || 'U'}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <h1 className="text-2xl font-bold">{user.full_name}</h1>
+                <div className="flex items-center space-x-2 text-muted-foreground">
+                  <MapPin className="h-4 w-4" />
+                  <span>{user.location}</span>
+                </div>
               </div>
+            </div>
+            <div className="mt-4 md:mt-0 flex items-center space-x-4">
+              <div className="flex items-center">
+                <Star className="h-5 w-5 text-yellow-500 mr-1" />
+                <span className="font-medium">{user.rating}</span>
+              </div>
+              <div className="flex items-center">
+                <Award className="h-5 w-5 text-primary mr-1" />
+                <span className="font-medium">{user.completed_swaps} swaps</span>
+              </div>
+              {currentUser?.id !== user.id && (
+                <Button className="flex items-center">
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Message
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-8 grid gap-6 md:grid-cols-2">
+            <div>
+              <h2 className="text-lg font-semibold mb-4">Skills Offering</h2>
+              <div className="flex flex-wrap gap-2">
+                {user.skills_offering.map((skill: string) => (
+                  <Badge key={skill} variant="secondary">{skill}</Badge>
+                ))}
+              </div>
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold mb-4">Looking to Learn</h2>
+              <div className="flex flex-wrap gap-2">
+                {user.skills_learning.map((skill: string) => (
+                  <Badge key={skill} variant="outline">{skill}</Badge>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {currentUser?.id !== user.id && (
+            <div className="mt-8">
+              <Button size="lg" className="w-full md:w-auto">
+                Request Skill Swap
+              </Button>
             </div>
           )}
         </CardContent>
       </Card>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>About</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">
+              {user.bio || "No bio provided yet."}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Availability</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">
+              {user.availability || "Availability not specified."}
+            </p>
+            {user.hourly_rate && (
+              <p className="mt-2 font-medium">
+                Rate: ₹{user.hourly_rate}/hour
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
+}
+
+// Mock data generator for a single user
+function getMockUser(userId: string) {
+  return {
+    id: userId,
+    full_name: `User ${userId.split('-')[1]}`,
+    username: `user${userId.split('-')[1]}`,
+    avatar_url: null,
+    location: ["Mumbai", "Delhi", "Bangalore", "Chennai", "Hyderabad"][Math.floor(Math.random() * 5)],
+    skills_offering: getRandomSkills(),
+    skills_learning: getRandomSkills(),
+    rating: (Math.random() * 2 + 3).toFixed(1),
+    completed_swaps: Math.floor(Math.random() * 20),
+    bio: "I am a passionate professional looking to exchange skills and knowledge with others in the community.",
+    availability: "Weekdays after 6 PM IST, Weekends flexible",
+    hourly_rate: Math.floor(Math.random() * 500) + 500,
+  }
+}
+
+function getRandomSkills() {
+  const shuffled = [...SKILLS].sort(() => 0.5 - Math.random())
+  return shuffled.slice(0, Math.floor(Math.random() * 3) + 1)
 }

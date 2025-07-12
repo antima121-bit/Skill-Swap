@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
@@ -14,6 +13,9 @@ import { MenuIcon } from "lucide-react"
 import { getCurrentUser } from "@/lib/database"
 import { handleSignOut } from "@/lib/actions"
 import { useEffect, useState } from "react"
+import type { Profile } from "@/lib/database"
+import { usePathname } from "next/navigation"
+import { supabase } from "@/lib/supabase"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -22,7 +24,8 @@ export default function ClientLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  const [currentUser, setCurrentUser] = useState<any>(null)
+  const [currentUser, setCurrentUser] = useState<Profile | null>(null)
+  const pathname = usePathname()
 
   useEffect(() => {
     const fetchCurrentUser = async () => {
@@ -31,22 +34,46 @@ export default function ClientLayout({
     }
 
     fetchCurrentUser()
+
+    // Subscribe to auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+        const user = await getCurrentUser()
+        setCurrentUser(user)
+      } else if (event === 'SIGNED_OUT') {
+        setCurrentUser(null)
+      }
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
   }, [])
 
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
       <div className="flex min-h-screen flex-col">
-        <header className="sticky top-0 z-40 w-full border-b bg-white dark:bg-gray-950">
+        <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="container flex h-16 items-center justify-between px-4 md:px-6">
-            <Link href="/" className="flex items-center gap-2 font-semibold" prefetch={false}>
-              <img src="/placeholder-logo.svg" alt="Logo" className="h-6 w-6" />
-              <span>Skill Swap</span>
+            <Link href="/" className="flex items-center gap-2" prefetch={false}>
+              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+                <span className="text-primary-foreground font-bold">S</span>
+              </div>
+              <span className="font-bold text-xl">Skill Swap India</span>
             </Link>
-            <nav className="hidden items-center space-x-4 md:flex">
-              <Link href="/search" className="text-sm font-medium hover:underline" prefetch={false}>
-                Find Swaps
+            <nav className="hidden items-center space-x-6 md:flex">
+              <Link 
+                href="/browse" 
+                className="text-sm font-medium transition-colors hover:text-primary" 
+                prefetch={false}
+              >
+                Browse
               </Link>
-              <Link href="/swaps" className="text-sm font-medium hover:underline" prefetch={false}>
+              <Link 
+                href="/my-swaps" 
+                className="text-sm font-medium transition-colors hover:text-primary" 
+                prefetch={false}
+              >
                 My Swaps
               </Link>
               {currentUser ? (
@@ -54,8 +81,10 @@ export default function ClientLayout({
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src={currentUser.avatar_url || "/placeholder-user.jpg"} />
-                        <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
+                        <AvatarImage src={currentUser.avatar_url || "/placeholder-user.jpg"} alt={currentUser.full_name || 'User'} />
+                        <AvatarFallback>
+                          {currentUser.full_name?.charAt(0) || currentUser.username?.charAt(0) || 'U'}
+                        </AvatarFallback>
                       </Avatar>
                     </Button>
                   </DropdownMenuTrigger>
@@ -63,14 +92,17 @@ export default function ClientLayout({
                     <Link href="/profile" passHref>
                       <DropdownMenuItem className="cursor-pointer">Profile</DropdownMenuItem>
                     </Link>
-                    <DropdownMenuItem onClick={async () => await handleSignOut()} className="cursor-pointer">
+                    <DropdownMenuItem onClick={async () => {
+                      await handleSignOut()
+                      setCurrentUser(null)
+                    }} className="cursor-pointer">
                       Logout
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
                 <Link href="/auth" passHref>
-                  <Button variant="outline">Login</Button>
+                  <Button variant="ghost" className="rounded-full">Sign In</Button>
                 </Link>
               )}
             </nav>
@@ -82,10 +114,10 @@ export default function ClientLayout({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <Link href="/search" passHref>
-                  <DropdownMenuItem>Find Swaps</DropdownMenuItem>
+                <Link href="/browse" passHref>
+                  <DropdownMenuItem>Browse</DropdownMenuItem>
                 </Link>
-                <Link href="/swaps" passHref>
+                <Link href="/my-swaps" passHref>
                   <DropdownMenuItem>My Swaps</DropdownMenuItem>
                 </Link>
                 {currentUser ? (
@@ -93,11 +125,16 @@ export default function ClientLayout({
                     <Link href="/profile" passHref>
                       <DropdownMenuItem>Profile</DropdownMenuItem>
                     </Link>
-                    <DropdownMenuItem onClick={async () => await handleSignOut()}>Logout</DropdownMenuItem>
+                    <DropdownMenuItem onClick={async () => {
+                      await handleSignOut()
+                      setCurrentUser(null)
+                    }}>
+                      Logout
+                    </DropdownMenuItem>
                   </>
                 ) : (
                   <Link href="/auth" passHref>
-                    <DropdownMenuItem>Login</DropdownMenuItem>
+                    <DropdownMenuItem>Sign In</DropdownMenuItem>
                   </Link>
                 )}
               </DropdownMenuContent>
@@ -105,19 +142,19 @@ export default function ClientLayout({
           </div>
         </header>
         {children}
-        <footer className="w-full border-t bg-white py-6 dark:bg-gray-950">
+        <footer className="w-full border-t bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 py-6">
           <div className="container flex flex-col items-center justify-between gap-4 px-4 md:flex-row md:px-6">
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              &copy; 2024 Skill Swap Platform. All rights reserved.
+            <p className="text-sm text-muted-foreground">
+              &copy; 2024 Skill Swap India. All rights reserved.
             </p>
             <nav className="flex gap-4 sm:gap-6">
-              <Link href="#" className="text-sm hover:underline" prefetch={false}>
+              <Link href="#" className="text-sm text-muted-foreground hover:text-primary transition-colors" prefetch={false}>
                 Privacy
               </Link>
-              <Link href="#" className="text-sm hover:underline" prefetch={false}>
+              <Link href="#" className="text-sm text-muted-foreground hover:text-primary transition-colors" prefetch={false}>
                 Terms
               </Link>
-              <Link href="#" className="text-sm hover:underline" prefetch={false}>
+              <Link href="#" className="text-sm text-muted-foreground hover:text-primary transition-colors" prefetch={false}>
                 Contact
               </Link>
             </nav>
