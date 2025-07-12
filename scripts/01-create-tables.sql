@@ -1,3 +1,6 @@
+-- Enable the uuid-ossp extension for uuid_generate_v4()
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 -- Create users table
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
