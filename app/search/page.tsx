@@ -14,91 +14,16 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import Link from "next/link"
 import { Logo } from "@/components/logo"
 
-// Extended mock data for search - Indian context
-const mockUsers = [
-  {
-    id: 1,
-    name: "Arjun Sharma",
-    avatar: "/placeholder.svg?height=40&width=40",
-    location: "Bangalore, Karnataka",
-    rating: 4.8,
-    skillsOffered: ["React", "Node.js", "TypeScript"],
-    skillsWanted: ["UI/UX Design", "Figma"],
-    availability: "Evenings, Weekends",
-    description: "Full-stack developer looking to learn design skills",
-    isOnline: true,
-    hourlyRate: "₹500",
-  },
-  {
-    id: 2,
-    name: "Priya Patel",
-    avatar: "/placeholder.svg?height=40&width=40",
-    location: "Mumbai, Maharashtra",
-    rating: 4.9,
-    skillsOffered: ["Photoshop", "Illustrator", "Branding"],
-    skillsWanted: ["Python", "Data Analysis"],
-    availability: "Weekdays after 6PM",
-    description: "Graphic designer wanting to transition into data science",
-    isOnline: false,
-    hourlyRate: "₹400",
-  },
-  {
-    id: 3,
-    name: "Rajesh Kumar",
-    avatar: "/placeholder.svg?height=40&width=40",
-    location: "Delhi, NCR",
-    rating: 4.7,
-    skillsOffered: ["Digital Marketing", "SEO", "Content Writing"],
-    skillsWanted: ["Web Development", "JavaScript"],
-    availability: "Flexible schedule",
-    description: "Marketing professional looking to learn coding",
-    isOnline: true,
-    hourlyRate: "₹350",
-  },
-  {
-    id: 4,
-    name: "Sneha Reddy",
-    avatar: "/placeholder.svg?height=40&width=40",
-    location: "Hyderabad, Telangana",
-    rating: 4.6,
-    skillsOffered: ["Python", "Machine Learning", "Data Science"],
-    skillsWanted: ["Mobile Development", "Flutter"],
-    availability: "Weekends",
-    description: "Data scientist interested in mobile app development",
-    isOnline: true,
-    hourlyRate: "₹600",
-  },
-  {
-    id: 5,
-    name: "Vikram Singh",
-    avatar: "/placeholder.svg?height=40&width=40",
-    location: "Pune, Maharashtra",
-    rating: 4.8,
-    skillsOffered: ["Video Editing", "After Effects", "Motion Graphics"],
-    skillsWanted: ["3D Modeling", "Blender"],
-    availability: "Evenings",
-    description: "Video editor looking to expand into 3D animation",
-    isOnline: false,
-    hourlyRate: "₹450",
-  },
-  {
-    id: 6,
-    name: "Kavya Nair",
-    avatar: "/placeholder.svg?height=40&width=40",
-    location: "Chennai, Tamil Nadu",
-    rating: 4.9,
-    skillsOffered: ["Project Management", "Agile", "Scrum"],
-    skillsWanted: ["Product Design", "User Research"],
-    availability: "Flexible",
-    description: "Project manager transitioning to product management",
-    isOnline: true,
-    hourlyRate: "₹550",
-  },
-]
+import { searchUsers } from "@/lib/database" // Import searchUsers from database
+import type { User } from "@/lib/supabase" // Import User type
+
+// Remove the mockUsers array
+// const mockUsers = [...]
 
 export default function SearchPage() {
   const [searchTerm, setSearchTerm] = useState("")
-  const [filteredUsers, setFilteredUsers] = useState(mockUsers)
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]) // Initialize with empty array
+  const [loading, setLoading] = useState(true) // Add loading state
   const [filters, setFilters] = useState({
     location: "",
     availability: "",
@@ -107,41 +32,20 @@ export default function SearchPage() {
   })
 
   useEffect(() => {
-    let filtered = mockUsers
-
-    // Search filter
-    if (searchTerm) {
-      filtered = filtered.filter(
-        (user) =>
-          user.skillsOffered.some((skill) => skill.toLowerCase().includes(searchTerm.toLowerCase())) ||
-          user.skillsWanted.some((skill) => skill.toLowerCase().includes(searchTerm.toLowerCase())) ||
-          user.name.toLowerCase().includes(searchTerm.toLowerCase()),
-      )
+    const fetchUsers = async () => {
+      setLoading(true)
+      try {
+        const users = await searchUsers(searchTerm, filters)
+        setFilteredUsers(users)
+      } catch (error) {
+        console.error("Error fetching users for search:", error)
+        setFilteredUsers([]) // Set to empty on error
+      } finally {
+        setLoading(false)
+      }
     }
-
-    // Location filter
-    if (filters.location) {
-      filtered = filtered.filter((user) => user.location.toLowerCase().includes(filters.location.toLowerCase()))
-    }
-
-    // Availability filter
-    if (filters.availability) {
-      filtered = filtered.filter((user) => user.availability.toLowerCase().includes(filters.availability.toLowerCase()))
-    }
-
-    // Rating filter
-    if (filters.rating) {
-      const minRating = Number.parseFloat(filters.rating)
-      filtered = filtered.filter((user) => user.rating >= minRating)
-    }
-
-    // Online only filter
-    if (filters.onlineOnly) {
-      filtered = filtered.filter((user) => user.isOnline)
-    }
-
-    setFilteredUsers(filtered)
-  }, [searchTerm, filters])
+    fetchUsers()
+  }, [searchTerm, filters]) // Depend on searchTerm and filters
 
   const clearFilters = () => {
     setFilters({
@@ -305,103 +209,112 @@ export default function SearchPage() {
         </div>
 
         {/* Results Grid */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {filteredUsers.map((user) => (
-            <Card
-              key={user.id}
-              className="backdrop-blur-md bg-black/30 border-green-500/30 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 hover:border-green-400/50"
-            >
-              <CardContent className="p-6">
-                {/* User Info */}
-                <div className="flex items-center space-x-3 mb-4">
-                  <div className="relative">
-                    <Avatar className="w-12 h-12 ring-2 ring-green-500/30">
-                      <AvatarImage src={user.avatar || "/placeholder.svg"} alt={user.name} />
-                      <AvatarFallback className="bg-gradient-to-r from-green-500 to-emerald-600 text-white font-black">
-                        {user.name
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")}
-                      </AvatarFallback>
-                    </Avatar>
-                    {user.isOnline && (
-                      <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-white font-black">{user.name}</h3>
-                    <div className="flex items-center space-x-2 text-sm text-gray-300 font-bold">
-                      <MapPin className="w-3 h-3" />
-                      <span>{user.location}</span>
-                      <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                      <span>{user.rating}</span>
+        {loading ? (
+          <div className="text-center text-white font-bold">Loading results...</div>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {filteredUsers.map((user) => (
+              <Card
+                key={user.id}
+                className="backdrop-blur-md bg-black/30 border-green-500/30 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 hover:border-green-400/50"
+              >
+                <CardContent className="p-6">
+                  {/* User Info */}
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="relative">
+                      <Avatar className="w-12 h-12 ring-2 ring-green-500/30">
+                        <AvatarImage src={user.avatar_url || "/placeholder.svg"} alt={user.name} />
+                        <AvatarFallback className="bg-gradient-to-r from-green-500 to-emerald-600 text-white font-black">
+                          {user.name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")}
+                        </AvatarFallback>
+                      </Avatar>
+                      {/* Assuming is_online property exists on User for demo */}
+                      {/* {user.is_online && (
+                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
+                      )} */}
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-white font-black">{user.name}</h3>
+                      <div className="flex items-center space-x-2 text-sm text-gray-300 font-bold">
+                        <MapPin className="w-3 h-3" />
+                        <span>{user.location}</span>
+                        <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                        <span>{user.rating}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Skills Offered */}
-                <div className="mb-4">
-                  <h4 className="text-sm font-black text-gray-300 mb-2">Skills Offered</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {user.skillsOffered.map((skill, index) => (
-                      <Badge
-                        key={index}
-                        className="bg-green-500/20 text-green-300 border-green-500/30 hover:bg-green-500/30 font-black"
-                      >
-                        {skill}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Skills Wanted */}
-                <div className="mb-4">
-                  <h4 className="text-sm font-black text-gray-300 mb-2">Skills Wanted</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {user.skillsWanted.map((skill, index) => (
-                      <Badge
-                        key={index}
-                        className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/30 font-black"
-                      >
-                        {skill}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Availability & Price */}
-                <div className="mb-4">
-                  <div className="flex items-center justify-between text-sm text-gray-300 font-bold">
-                    <div className="flex items-center space-x-2">
-                      <Clock className="w-4 h-4" />
-                      <span>{user.availability}</span>
+                  {/* Skills Offered */}
+                  <div className="mb-4">
+                    <h4 className="text-sm font-black text-gray-300 mb-2">Skills Offered</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {user.user_skills_offered?.map((userSkill, index) => (
+                        <Badge
+                          key={index}
+                          className="bg-green-500/20 text-green-300 border-green-500/30 hover:bg-green-500/30 font-black"
+                        >
+                          {userSkill.skill?.name}
+                        </Badge>
+                      ))}
                     </div>
-                    <span className="text-green-400 font-black">{user.hourlyRate}/hour</span>
                   </div>
-                </div>
 
-                {/* Description */}
-                <p className="text-gray-300 text-sm mb-4 font-bold">{user.description}</p>
+                  {/* Skills Wanted */}
+                  <div className="mb-4">
+                    <h4 className="text-sm font-black text-gray-300 mb-2">Skills Wanted</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {user.user_skills_wanted?.map((userSkill, index) => (
+                        <Badge
+                          key={index}
+                          className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/30 font-black"
+                        >
+                          {userSkill.skill?.name}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
 
-                {/* Action Buttons */}
-                <div className="flex space-x-2">
-                  <Button className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 font-black">
-                    Send Request
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="border-green-500/30 text-white hover:bg-green-500/20 bg-transparent font-black"
-                  >
-                    View Profile
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                  {/* Availability & Price */}
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between text-sm text-gray-300 font-bold">
+                      <div className="flex items-center space-x-2">
+                        <Clock className="w-4 h-4" />
+                        <span>{user.availability}</span>
+                      </div>
+                      <span className="text-green-400 font-black">{user.hourly_rate}/hour</span>
+                    </div>
+                  </div>
+
+                  {/* Description */}
+                  <p className="text-gray-300 text-sm mb-4 font-bold">{user.bio}</p>
+
+                  {/* Action Buttons */}
+                  <div className="flex space-x-2">
+                    <Link href={`/swap-request/${user.id}`}>
+                      <Button className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 font-black">
+                        Send Request
+                      </Button>
+                    </Link>
+                    <Link href={`/profile/${user.id}`}>
+                      <Button
+                        variant="outline"
+                        className="border-green-500/30 text-white hover:bg-green-500/20 bg-transparent font-black"
+                      >
+                        View Profile
+                      </Button>
+                    </Link>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
 
         {/* No Results */}
-        {filteredUsers.length === 0 && (
+        {!loading && filteredUsers.length === 0 && (
           <div className="text-center py-12">
             <div className="w-24 h-24 bg-black/30 rounded-full flex items-center justify-center mx-auto mb-4">
               <Search className="w-12 h-12 text-gray-400" />

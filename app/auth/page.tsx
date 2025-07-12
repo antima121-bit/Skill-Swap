@@ -11,6 +11,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Logo } from "@/components/logo"
 import Link from "next/link"
+import { useRouter } from "next/navigation" // Import useRouter
+import { supabase } from "@/lib/supabase" // Import supabase client
 
 export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -21,17 +23,78 @@ export default function AuthPage() {
     password: "",
     confirmPassword: "",
   })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const router = useRouter() // Initialize useRouter
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Handle login logic here
-    console.log("Login:", loginData)
+    setLoading(true)
+    setError(null)
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: loginData.email,
+        password: loginData.password,
+      })
+
+      if (error) throw error
+      router.push("/profile") // Redirect to profile page on successful login
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Handle registration logic here
-    console.log("Register:", registerData)
+    setLoading(true)
+    setError(null)
+    if (registerData.password !== registerData.confirmPassword) {
+      setError("Passwords do not match.")
+      setLoading(false)
+      return
+    }
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: registerData.email,
+        password: registerData.password,
+        options: {
+          data: {
+            name: registerData.name,
+            // You might want to add default values for other user fields here
+            // e.g., location: "India", bio: "New user", etc.
+          },
+        },
+      })
+
+      if (error) throw error
+
+      // If user is created, insert into public.users table
+      if (data.user) {
+        const { error: insertError } = await supabase.from("users").insert({
+          id: data.user.id,
+          email: data.user.email,
+          name: registerData.name,
+          // Set default values for other fields
+          location: "India",
+          bio: "New to Skill Swap India!",
+          hourly_rate: "₹0",
+          availability: "Flexible",
+          is_public: true,
+          rating: 0.0,
+          completed_swaps: 0,
+        })
+
+        if (insertError) throw insertError
+      }
+
+      router.push("/profile") // Redirect to profile page on successful registration
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -132,11 +195,14 @@ export default function AuthPage() {
                     </Button>
                   </div>
 
+                  {error && <p className="text-red-400 text-sm text-center">{error}</p>}
+
                   <Button
                     type="submit"
                     className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 rounded-xl py-3 font-black"
+                    disabled={loading}
                   >
-                    Sign In
+                    {loading ? "Signing In..." : "Sign In"}
                   </Button>
                 </form>
               </TabsContent>
@@ -218,11 +284,14 @@ export default function AuthPage() {
                     </Label>
                   </div>
 
+                  {error && <p className="text-red-400 text-sm text-center">{error}</p>}
+
                   <Button
                     type="submit"
                     className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 rounded-xl py-3 font-black"
+                    disabled={loading}
                   >
-                    Create Account
+                    {loading ? "Creating Account..." : "Create Account"}
                   </Button>
                 </form>
               </TabsContent>

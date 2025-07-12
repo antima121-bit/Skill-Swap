@@ -17,6 +17,11 @@ const mockUsers: User[] = [
     created_at: "2024-01-01",
     updated_at: "2024-01-01",
     avatar_url: "/images/person-avatar.png", // Updated avatar URL
+    user_skills_offered: [{ skill: { id: "react", name: "React" } }, { skill: { id: "nodejs", name: "Node.js" } }],
+    user_skills_wanted: [
+      { skill: { id: "ui-ux-design", name: "UI/UX Design" } },
+      { skill: { id: "figma", name: "Figma" } },
+    ],
   },
   {
     id: "2",
@@ -32,6 +37,14 @@ const mockUsers: User[] = [
     created_at: "2024-01-01",
     updated_at: "2024-01-01",
     avatar_url: "/images/person-avatar.png", // Updated avatar URL
+    user_skills_offered: [
+      { skill: { id: "photoshop", name: "Photoshop" } },
+      { skill: { id: "illustrator", name: "Illustrator" } },
+    ],
+    user_skills_wanted: [
+      { skill: { id: "python", name: "Python" } },
+      { skill: { id: "data-analysis", name: "Data Analysis" } },
+    ],
   },
   {
     id: "3",
@@ -47,6 +60,14 @@ const mockUsers: User[] = [
     created_at: "2024-01-01",
     updated_at: "2024-01-01",
     avatar_url: "/images/person-avatar.png", // Updated avatar URL
+    user_skills_offered: [
+      { skill: { id: "digital-marketing", name: "Digital Marketing" } },
+      { skill: { id: "seo", name: "SEO" } },
+    ],
+    user_skills_wanted: [
+      { skill: { id: "web-development", name: "Web Development" } },
+      { skill: { id: "javascript", name: "JavaScript" } },
+    ],
   },
   {
     id: "4",
@@ -62,6 +83,14 @@ const mockUsers: User[] = [
     created_at: "2024-01-01",
     updated_at: "2024-01-01",
     avatar_url: "/images/person-avatar.png", // Updated avatar URL
+    user_skills_offered: [
+      { skill: { id: "python", name: "Python" } },
+      { skill: { id: "machine-learning", name: "Machine Learning" } },
+    ],
+    user_skills_wanted: [
+      { skill: { id: "mobile-development", name: "Mobile Development" } },
+      { skill: { id: "flutter", name: "Flutter" } },
+    ],
   },
   {
     id: "5",
@@ -77,6 +106,14 @@ const mockUsers: User[] = [
     created_at: "2024-01-01",
     updated_at: "2024-01-01",
     avatar_url: "/images/person-avatar.png", // Updated avatar URL
+    user_skills_offered: [
+      { skill: { id: "video-editing", name: "Video Editing" } },
+      { skill: { id: "after-effects", name: "After Effects" } },
+    ],
+    user_skills_wanted: [
+      { skill: { id: "3d-modeling", name: "3D Modeling" } },
+      { skill: { id: "blender", name: "Blender" } },
+    ],
   },
   {
     id: "6",
@@ -92,6 +129,14 @@ const mockUsers: User[] = [
     created_at: "2024-01-01",
     updated_at: "2024-01-01",
     avatar_url: "/images/person-avatar.png", // Updated avatar URL
+    user_skills_offered: [
+      { skill: { id: "project-management", name: "Project Management" } },
+      { skill: { id: "agile", name: "Agile" } },
+    ],
+    user_skills_wanted: [
+      { skill: { id: "product-design", name: "Product Design" } },
+      { skill: { id: "user-research", name: "User Research" } },
+    ],
   },
 ]
 
@@ -202,7 +247,17 @@ export async function getCurrentUser(): Promise<User | null> {
     } = await supabase.auth.getUser()
     if (!user) return null
 
-    const { data, error } = await supabase.from("users").select("*").eq("email", user.email).single()
+    const { data, error } = await supabase
+      .from("users")
+      .select(
+        `
+        *,
+        user_skills_offered(skill_id, skill(name)),
+        user_skills_wanted(skill_id, skill(name))
+      `,
+      )
+      .eq("id", user.id) // Use user.id directly
+      .single()
 
     if (error) {
       console.error("Error fetching user:", error)
@@ -222,7 +277,17 @@ export async function getUserById(id: string): Promise<User | null> {
   }
 
   try {
-    const { data, error } = await supabase.from("users").select("*").eq("id", id).single()
+    const { data, error } = await supabase
+      .from("users")
+      .select(
+        `
+        *,
+        user_skills_offered(skill_id, skill(name)),
+        user_skills_wanted(skill_id, skill(name))
+      `,
+      )
+      .eq("id", id)
+      .single()
 
     if (error) {
       console.error("Error fetching user by ID:", error)
@@ -292,13 +357,15 @@ export async function createSwapRequest(request: {
         requester_id: currentUser.id,
         ...request,
       })
-      .select(`
+      .select(
+        `
         *,
         requester:users!requester_id(*),
         recipient:users!recipient_id(*),
         skill_offered:skills!skill_offered_id(*),
         skill_wanted:skills!skill_wanted_id(*)
-      `)
+      `,
+      )
       .single()
 
     if (error) {
@@ -326,39 +393,45 @@ export async function getSwapRequests(userId: string): Promise<{
     // Get pending requests
     const { data: pendingData, error: pendingError } = await supabase
       .from("swap_requests")
-      .select(`
+      .select(
+        `
         *,
         requester:users!requester_id(*),
         recipient:users!recipient_id(*),
         skill_offered:skills!skill_offered_id(*),
         skill_wanted:skills!skill_wanted_id(*)
-      `)
+      `,
+      )
       .or(`requester_id.eq.${userId},recipient_id.eq.${userId}`)
       .eq("status", "pending")
 
     // Get active swaps
     const { data: activeData, error: activeError } = await supabase
       .from("active_swaps")
-      .select(`
+      .select(
+        `
         *,
         user1:users!user1_id(*),
         user2:users!user2_id(*),
         skill1:skills!skill1_id(*),
         skill2:skills!skill2_id(*)
-      `)
+      `,
+      )
       .or(`user1_id.eq.${userId},user2_id.eq.${userId}`)
       .eq("status", "active")
 
     // Get completed requests
     const { data: completedData, error: completedError } = await supabase
       .from("swap_requests")
-      .select(`
+      .select(
+        `
         *,
         requester:users!requester_id(*),
         recipient:users!recipient_id(*),
         skill_offered:skills!skill_offered_id(*),
         skill_wanted:skills!skill_wanted_id(*)
-      `)
+      `,
+      )
       .or(`requester_id.eq.${userId},recipient_id.eq.${userId}`)
       .eq("status", "accepted")
 
@@ -387,13 +460,15 @@ export async function updateSwapRequestStatus(
       .from("swap_requests")
       .update({ status, updated_at: new Date().toISOString() })
       .eq("id", requestId)
-      .select(`
+      .select(
+        `
         *,
         requester:users!requester_id(*),
         recipient:users!recipient_id(*),
         skill_offered:skills!skill_offered_id(*),
         skill_wanted:skills!skill_wanted_id(*)
-      `)
+      `,
+      )
       .single()
 
     if (error) {
@@ -475,10 +550,12 @@ export async function sendMessage(
         content,
         swap_request_id: swapRequestId,
       })
-      .select(`
+      .select(
+        `
         *,
         sender:users!sender_id(*)
-      `)
+      `,
+      )
       .single()
 
     if (error) {
@@ -518,10 +595,12 @@ export async function getMessages(userId: string, otherUserId: string): Promise<
   try {
     const { data, error } = await supabase
       .from("messages")
-      .select(`
+      .select(
+        `
         *,
         sender:users!sender_id(*)
-      `)
+      `,
+      )
       .or(
         `and(sender_id.eq.${userId},recipient_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},recipient_id.eq.${userId})`,
       )
@@ -553,11 +632,14 @@ export async function searchUsers(
     let filteredUsers = [...mockUsers]
 
     if (query) {
+      const lowerCaseQuery = query.toLowerCase()
       filteredUsers = filteredUsers.filter(
         (user) =>
-          user.name.toLowerCase().includes(query.toLowerCase()) ||
-          user.location?.toLowerCase().includes(query.toLowerCase()) ||
-          user.bio?.toLowerCase().includes(query.toLowerCase()),
+          user.name.toLowerCase().includes(lowerCaseQuery) ||
+          user.location?.toLowerCase().includes(lowerCaseQuery) ||
+          user.bio?.toLowerCase().includes(lowerCaseQuery) ||
+          user.user_skills_offered?.some((us) => us.skill?.name.toLowerCase().includes(lowerCaseQuery)) ||
+          user.user_skills_wanted?.some((us) => us.skill?.name.toLowerCase().includes(lowerCaseQuery)),
       )
     }
 
@@ -572,27 +654,44 @@ export async function searchUsers(
       filteredUsers = filteredUsers.filter((user) => user.rating >= minRating)
     }
 
+    // Note: onlineOnly filter is not directly supported by mock data structure
+    // If it were, you'd add:
+    // if (filters.onlineOnly) {
+    //   filteredUsers = filteredUsers.filter((user) => user.is_online);
+    // }
+
     return filteredUsers
   }
 
   try {
-    let queryBuilder = supabase.from("users").select("*").eq("is_public", true)
-
-    if (query) {
-      queryBuilder = queryBuilder.or(`name.ilike.%${query}%,location.ilike.%${query}%`)
-    }
+    let queryBuilder = supabase
+      .from("users")
+      .select(
+        `
+        *,
+        user_skills_offered(skill_id, skill(name)),
+        user_skills_wanted(skill_id, skill(name))
+      `,
+      )
+      .eq("is_public", true)
 
     if (filters.location) {
       queryBuilder = queryBuilder.ilike("location", `%${filters.location}%`)
     }
 
-    if (filters.availability) {
+    if (filters.availability && filters.availability !== "any") {
       queryBuilder = queryBuilder.ilike("availability", `%${filters.availability}%`)
     }
 
-    if (filters.rating) {
+    if (filters.rating && filters.rating !== "any") {
       queryBuilder = queryBuilder.gte("rating", Number.parseFloat(filters.rating))
     }
+
+    // Note: Supabase does not have a direct 'is_online' column in the provided schema.
+    // If you had one, you'd add:
+    // if (filters.onlineOnly) {
+    //   queryBuilder = queryBuilder.eq("is_online", true);
+    // }
 
     const { data, error } = await queryBuilder
 
@@ -601,10 +700,29 @@ export async function searchUsers(
       return []
     }
 
-    return data || []
+    let finalUsers = data || []
+
+    // Client-side filtering for skills if query is present
+    if (query) {
+      const lowerCaseQuery = query.toLowerCase()
+      finalUsers = finalUsers.filter((user) => {
+        const offeredSkills = user.user_skills_offered?.map((us) => us.skill?.name.toLowerCase()) || []
+        const wantedSkills = user.user_skills_wanted?.map((us) => us.skill?.name.toLowerCase()) || []
+
+        return (
+          user.name.toLowerCase().includes(lowerCaseQuery) ||
+          (user.location && user.location.toLowerCase().includes(lowerCaseQuery)) ||
+          (user.bio && user.bio.toLowerCase().includes(lowerCaseQuery)) ||
+          offeredSkills.some((skillName) => skillName.includes(lowerCaseQuery)) ||
+          wantedSkills.some((skillName) => skillName.includes(lowerCaseQuery))
+        )
+      })
+    }
+
+    return finalUsers as User[]
   } catch (error) {
     console.error("Error in searchUsers:", error)
-    return mockUsers
+    return mockUsers // Fallback to mock users
   }
 }
 
@@ -614,9 +732,30 @@ export async function getSkills(): Promise<any[]> {
     return [
       { id: "react", name: "React", category: "Frontend" },
       { id: "nodejs", name: "Node.js", category: "Backend" },
-      { id: "python", name: "Python", category: "Programming" },
-      { id: "photoshop", name: "Photoshop", category: "Design" },
-      { id: "figma", name: "Figma", category: "Design" },
+      { id: "typescript", name: "TypeScript", category: "Programming Languages" },
+      { id: "python", name: "Python", category: "Programming Languages" },
+      { id: "ui-ux-design", name: "UI/UX Design", category: "Design" },
+      { id: "figma", name: "Figma", category: "Design Tools" },
+      { id: "photoshop", name: "Photoshop", category: "Design Tools" },
+      { id: "illustrator", name: "Illustrator", category: "Design Tools" },
+      { id: "digital-marketing", name: "Digital Marketing", category: "Marketing" },
+      { id: "seo", name: "SEO", category: "Marketing" },
+      { id: "content-writing", name: "Content Writing", category: "Writing" },
+      { id: "machine-learning", name: "Machine Learning", category: "Data Science" },
+      { id: "data-analysis", name: "Data Analysis", category: "Data Science" },
+      { id: "video-editing", name: "Video Editing", category: "Media" },
+      { id: "after-effects", name: "After Effects", category: "Media" },
+      { id: "project-management", name: "Project Management", category: "Business" },
+      { id: "agile", name: "Agile", category: "Business" },
+      { id: "scrum", name: "Scrum", category: "Business" },
+      { id: "mobile-development", name: "Mobile Development", category: "Development" },
+      { id: "flutter", name: "Flutter", category: "Mobile Development" },
+      { id: "3d-modeling", name: "3D Modeling", category: "Design" },
+      { id: "blender", name: "Blender", category: "Design Tools" },
+      { id: "product-design", name: "Product Design", category: "Design" },
+      { id: "user-research", name: "User Research", category: "Research" },
+      { id: "web-development", name: "Web Development", category: "Development" },
+      { id: "javascript", name: "JavaScript", category: "Programming Languages" },
     ]
   }
 
@@ -640,27 +779,32 @@ export async function getUserSkills(userId: string): Promise<{
   wanted: any[]
 }> {
   if (!isSupabaseConfigured()) {
+    const user = mockUsers.find((u) => u.id === userId)
     return {
-      offered: [{ skill: { id: "react", name: "React" } }, { skill: { id: "nodejs", name: "Node.js" } }],
-      wanted: [{ skill: { id: "photoshop", name: "Photoshop" } }, { skill: { id: "figma", name: "Figma" } }],
+      offered: user?.user_skills_offered || [],
+      wanted: user?.user_skills_wanted || [],
     }
   }
 
   try {
     const { data: offeredData } = await supabase
       .from("user_skills_offered")
-      .select(`
+      .select(
+        `
         *,
         skill:skills(*)
-      `)
+      `,
+      )
       .eq("user_id", userId)
 
     const { data: wantedData } = await supabase
       .from("user_skills_wanted")
-      .select(`
+      .select(
+        `
         *,
         skill:skills(*)
-      `)
+      `,
+      )
       .eq("user_id", userId)
 
     return {

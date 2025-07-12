@@ -7,7 +7,7 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholde
 // Create client with error handling
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    persistSession: false, // Disable auth for demo
+    persistSession: true, // Enable session persistence
   },
 })
 
@@ -31,6 +31,8 @@ export interface User {
   completed_swaps: number
   created_at: string
   updated_at: string
+  user_skills_offered?: { skill_id: string; skill?: Skill }[] // Add skills to User type
+  user_skills_wanted?: { skill_id: string; skill?: Skill }[] // Add skills to User type
 }
 
 export interface Skill {
@@ -79,4 +81,8 @@ export interface ActiveSwap {
   total_sessions: number
   created_at: string
   updated_at: string
+  user1?: User // Add user relations
+  user2?: User // Add user relations
+  skill1?: Skill // Add skill relations
+  skill2?: Skill // Add skill relations
 }

@@ -23,7 +23,8 @@ export default function HomePage() {
   }, [])
 
   useEffect(() => {
-    if (searchTerm) {
+    // Only search if searchTerm is not empty, otherwise load initial users
+    if (searchTerm.trim()) {
       searchUsersWithTerm()
     } else {
       loadUsers()
@@ -31,7 +32,9 @@ export default function HomePage() {
   }, [searchTerm])
 
   const loadUsers = async () => {
+    setLoading(true)
     try {
+      // Fetch all public users initially
       const userData = await searchUsers("", {})
       setUsers(userData.slice(0, 6)) // Show first 6 users
     } catch (error) {
@@ -42,11 +45,14 @@ export default function HomePage() {
   }
 
   const searchUsersWithTerm = async () => {
+    setLoading(true)
     try {
       const userData = await searchUsers(searchTerm, {})
       setUsers(userData)
     } catch (error) {
       console.error("Error searching users:", error)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -115,64 +121,72 @@ export default function HomePage() {
         </div>
 
         {/* Skill Listings */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {users.map((user) => (
-            <Card
-              key={user.id}
-              className="backdrop-blur-md bg-black/30 border-green-500/30 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 hover:border-green-400/50"
-            >
-              <CardContent className="p-6">
-                {/* User Info */}
-                <div className="flex items-center space-x-3 mb-4">
-                  <Avatar className="w-12 h-12 ring-2 ring-green-500/30">
-                    <AvatarImage src={user.avatar_url || "/placeholder.svg"} alt={user.name} />
-                    <AvatarFallback className="bg-gradient-to-r from-green-500 to-emerald-600 text-white font-black">
-                      {user.name
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <h3 className="text-white font-black">{user.name}</h3>
-                    <div className="flex items-center space-x-2 text-sm text-gray-300 font-bold">
-                      <MapPin className="w-3 h-3" />
-                      <span>{user.location}</span>
-                      <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                      <span>{user.rating}</span>
+        {loading ? (
+          <div className="text-center text-white font-bold">Loading users...</div>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {users.length === 0 ? (
+              <div className="col-span-full text-center text-gray-300 font-bold">No users found.</div>
+            ) : (
+              users.map((user) => (
+                <Card
+                  key={user.id}
+                  className="backdrop-blur-md bg-black/30 border-green-500/30 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 hover:border-green-400/50"
+                >
+                  <CardContent className="p-6">
+                    {/* User Info */}
+                    <div className="flex items-center space-x-3 mb-4">
+                      <Avatar className="w-12 h-12 ring-2 ring-green-500/30">
+                        <AvatarImage src={user.avatar_url || "/placeholder.svg"} alt={user.name} />
+                        <AvatarFallback className="bg-gradient-to-r from-green-500 to-emerald-600 text-white font-black">
+                          {user.name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <h3 className="text-white font-black">{user.name}</h3>
+                        <div className="flex items-center space-x-2 text-sm text-gray-300 font-bold">
+                          <MapPin className="w-3 h-3" />
+                          <span>{user.location}</span>
+                          <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                          <span>{user.rating}</span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
 
-                {/* Bio */}
-                <p className="text-gray-300 text-sm mb-4 font-bold">{user.bio}</p>
+                    {/* Bio */}
+                    <p className="text-gray-300 text-sm mb-4 font-bold">{user.bio}</p>
 
-                {/* Rate */}
-                <div className="mb-4">
-                  <span className="text-green-400 font-black">{user.hourly_rate}/hour</span>
-                </div>
+                    {/* Rate */}
+                    <div className="mb-4">
+                      <span className="text-green-400 font-black">{user.hourly_rate}/hour</span>
+                    </div>
 
-                {/* Action Buttons */}
-                <div className="flex space-x-2">
-                  <Link href={`/swap-request/${user.id}`}>
-                    <Button className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 font-black">
-                      <MessageCircle className="w-4 h-4 mr-2" />
-                      Swap
-                    </Button>
-                  </Link>
-                  <Link href={`/profile/${user.id}`}>
-                    <Button
-                      variant="outline"
-                      className="border-green-500/30 text-white hover:bg-green-500/20 bg-transparent font-black"
-                    >
-                      View Profile
-                    </Button>
-                  </Link>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                    {/* Action Buttons */}
+                    <div className="flex space-x-2">
+                      <Link href={`/swap-request/${user.id}`}>
+                        <Button className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 font-black">
+                          <MessageCircle className="w-4 h-4 mr-2" />
+                          Swap
+                        </Button>
+                      </Link>
+                      <Link href={`/profile/${user.id}`}>
+                        <Button
+                          variant="outline"
+                          className="border-green-500/30 text-white hover:bg-green-500/20 bg-transparent font-black"
+                        >
+                          View Profile
+                        </Button>
+                      </Link>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+        )}
 
         {/* Call to Action */}
         <div className="text-center mt-12">
