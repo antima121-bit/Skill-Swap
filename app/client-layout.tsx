@@ -12,7 +12,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { MenuIcon } from "lucide-react"
 import { getCurrentUser } from "@/lib/database"
-import { supabase } from "@/lib/supabase"
+import { handleSignOut } from "@/lib/actions"
 import { useEffect, useState } from "react"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -32,11 +32,6 @@ export default function ClientLayout({
 
     fetchCurrentUser()
   }, [])
-
-  const handleSignOut = async () => {
-    "use server"
-    await supabase.auth.signOut()
-  }
 
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
