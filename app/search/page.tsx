@@ -1,335 +1,203 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect } from "react"
-import { Search, MapPin, Star, Clock, ArrowLeft, SlidersHorizontal } from "lucide-react"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { Card } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
+import { StarIcon, MapPinIcon, SearchIcon } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Label } from "@/components/ui/label"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
-import Link from "next/link"
-import { Logo } from "@/components/logo"
-
-import { searchUsers } from "@/lib/database" // Import searchUsers from database
-import type { User } from "@/lib/supabase" // Import User type
-
-// Remove the mockUsers array
-// const mockUsers = [...]
+import { searchUsers, getCurrentUser } from "@/lib/database"
+import type { User } from "@/lib/supabase"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export default function SearchPage() {
   const [searchTerm, setSearchTerm] = useState("")
-  const [filteredUsers, setFilteredUsers] = useState<User[]>([]) // Initialize with empty array
-  const [loading, setLoading] = useState(true) // Add loading state
-  const [filters, setFilters] = useState({
-    location: "",
-    availability: "",
-    rating: "",
-    onlineOnly: false,
-  })
+  const [locationFilter, setLocationFilter] = useState("")
+  const [availabilityFilter, setAvailabilityFilter] = useState("")
+  const [ratingFilter, setRatingFilter] = useState("")
+  const [users, setUsers] = useState<User[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchLoading, setSearchLoading] = useState(false)
+  const [currentUser, setCurrentUser] = useState<User | null>(null)
+
+  const fetchUsers = async (query = "", filters = {}) => {
+    setSearchLoading(true)
+    const fetchedUsers = await searchUsers(query, filters)
+    setUsers(fetchedUsers)
+    setSearchLoading(false)
+  }
 
   useEffect(() => {
-    const fetchUsers = async () => {
+    const loadInitialData = async () => {
       setLoading(true)
-      try {
-        const users = await searchUsers(searchTerm, filters)
-        setFilteredUsers(users)
-      } catch (error) {
-        console.error("Error fetching users for search:", error)
-        setFilteredUsers([]) // Set to empty on error
-      } finally {
-        setLoading(false)
-      }
+      await fetchUsers()
+      const user = await getCurrentUser()
+      setCurrentUser(user)
+      setLoading(false)
     }
-    fetchUsers()
-  }, [searchTerm, filters]) // Depend on searchTerm and filters
+    loadInitialData()
+  }, [])
 
-  const clearFilters = () => {
-    setFilters({
-      location: "",
-      availability: "",
-      rating: "",
-      onlineOnly: false,
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault()
+    await fetchUsers(searchTerm, {
+      location: locationFilter,
+      availability: availabilityFilter,
+      rating: ratingFilter,
     })
-    setSearchTerm("")
+  }
+
+  const handleFilterChange = async () => {
+    await fetchUsers(searchTerm, {
+      location: locationFilter,
+      availability: availabilityFilter,
+      rating: ratingFilter,
+    })
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-green-900 to-black">
-      {/* Navigation */}
-      <nav className="backdrop-blur-md bg-black/30 border-b border-green-500/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/">
-              <Button variant="ghost" className="text-white hover:bg-green-500/20 font-black">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Home
-              </Button>
-            </Link>
-            <div className="flex items-center space-x-3">
-              <Logo className="w-10 h-10" />
-              <span className="text-white font-black text-xl tracking-wide">Skill Swap India</span>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Link href="/profile">
-                <Button variant="ghost" className="text-white hover:bg-green-500/20 font-black">
-                  Profile
+    <div className="flex min-h-screen flex-col">
+      <main className="flex-1">
+        <section className="w-full py-12 md:py-24 lg:py-32">
+          <div className="container px-4 md:px-6">
+            <div className="flex flex-col items-center justify-center space-y-4 text-center">
+              <div className="space-y-2">
+                <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none">
+                  Find Your Skill Swap Partner
+                </h1>
+                <p className="max-w-[600px] text-gray-500 md:text-xl dark:text-gray-400">
+                  Search for individuals by skills, location, availability, and rating.
+                </p>
+              </div>
+              <form onSubmit={handleSearch} className="flex w-full max-w-md items-center space-x-2">
+                <Input
+                  type="text"
+                  placeholder="Search for skills or users..."
+                  className="flex-1"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                <Button type="submit" disabled={searchLoading}>
+                  {searchLoading ? "Searching..." : <SearchIcon className="h-4 w-4" />}
+                  <span className="sr-only">Search</span>
                 </Button>
-              </Link>
-              <Link href="/swaps">
-                <Button variant="ghost" className="text-white hover:bg-green-500/20 font-black">
-                  My Swaps
+              </form>
+              <div className="mt-4 flex w-full max-w-md flex-wrap justify-center gap-4">
+                <Select value={locationFilter} onValueChange={(value) => setLocationFilter(value)}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Location" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="any">Any Location</SelectItem>
+                    <SelectItem value="Bangalore">Bangalore</SelectItem>
+                    <SelectItem value="Mumbai">Mumbai</SelectItem>
+                    <SelectItem value="Delhi">Delhi</SelectItem>
+                    <SelectItem value="Hyderabad">Hyderabad</SelectItem>
+                    <SelectItem value="Pune">Pune</SelectItem>
+                    <SelectItem value="Chennai">Chennai</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={availabilityFilter} onValueChange={(value) => setAvailabilityFilter(value)}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Availability" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="any">Any Availability</SelectItem>
+                    <SelectItem value="Evenings">Evenings</SelectItem>
+                    <SelectItem value="Weekends">Weekends</SelectItem>
+                    <SelectItem value="Weekdays after 6PM">Weekdays after 6PM</SelectItem>
+                    <SelectItem value="Flexible schedule">Flexible schedule</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={ratingFilter} onValueChange={(value) => setRatingFilter(value)}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Min. Rating" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="any">Any Rating</SelectItem>
+                    <SelectItem value="4">4 Stars & Up</SelectItem>
+                    <SelectItem value="4.5">4.5 Stars & Up</SelectItem>
+                    <SelectItem value="4.8">4.8 Stars & Up</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button onClick={handleFilterChange} disabled={searchLoading}>
+                  Apply Filters
                 </Button>
-              </Link>
+              </div>
             </div>
           </div>
-        </div>
-      </nav>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Search Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-black text-white mb-4">
-            Browse
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-500">Skills</span>
-          </h1>
-          <p className="text-xl text-gray-300 mb-8 font-bold">
-            Find the perfect skill exchange partner from our Indian community
-          </p>
-
-          {/* Search Bar */}
-          <div className="max-w-2xl mx-auto mb-6">
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <Input
-                placeholder="Search for skills, people, or cities..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-12 pr-4 py-3 bg-black/30 backdrop-blur-md border-green-500/30 text-white placeholder-gray-400 rounded-2xl text-lg font-bold"
-              />
+        </section>
+        <section className="w-full bg-gray-100 py-12 md:py-24 lg:py-32 dark:bg-gray-800">
+          <div className="container px-4 md:px-6">
+            <div className="flex flex-col items-center justify-center space-y-4 text-center">
+              <div className="space-y-2">
+                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Search Results</h2>
+                <p className="max-w-[900px] text-gray-500 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed dark:text-gray-400">
+                  Browse through profiles matching your search criteria.
+                </p>
+              </div>
             </div>
-          </div>
-
-          {/* Filter Controls */}
-          <div className="flex flex-wrap items-center justify-center gap-4 mb-8">
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="border-green-500/30 text-white hover:bg-green-500/20 rounded-xl bg-transparent font-black"
-                >
-                  <SlidersHorizontal className="w-4 h-4 mr-2" />
-                  Filters
-                </Button>
-              </SheetTrigger>
-              <SheetContent className="bg-gradient-to-br from-gray-900/95 via-green-900/95 to-black/95 backdrop-blur-md border-green-500/30">
-                <SheetHeader>
-                  <SheetTitle className="text-white font-black">Filter Results</SheetTitle>
-                </SheetHeader>
-                <div className="space-y-6 mt-6">
-                  {/* Location Filter */}
-                  <div>
-                    <Label className="text-white mb-2 block font-black">Location</Label>
-                    <Input
-                      placeholder="Enter city or state"
-                      value={filters.location}
-                      onChange={(e) => setFilters({ ...filters, location: e.target.value })}
-                      className="bg-black/30 backdrop-blur-md border-green-500/30 text-white placeholder-gray-400 rounded-xl font-bold"
-                    />
-                  </div>
-
-                  {/* Availability Filter */}
-                  <div>
-                    <Label className="text-white mb-2 block font-black">Availability</Label>
-                    <Select
-                      value={filters.availability}
-                      onValueChange={(value) => setFilters({ ...filters, availability: value })}
-                    >
-                      <SelectTrigger className="bg-black/30 backdrop-blur-md border-green-500/30 text-white rounded-xl font-bold">
-                        <SelectValue placeholder="Select availability" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="any">Any time</SelectItem>
-                        <SelectItem value="weekdays">Weekdays</SelectItem>
-                        <SelectItem value="evenings">Evenings</SelectItem>
-                        <SelectItem value="weekends">Weekends</SelectItem>
-                        <SelectItem value="flexible">Flexible</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Rating Filter */}
-                  <div>
-                    <Label className="text-white mb-2 block font-black">Minimum Rating</Label>
-                    <Select value={filters.rating} onValueChange={(value) => setFilters({ ...filters, rating: value })}>
-                      <SelectTrigger className="bg-black/30 backdrop-blur-md border-green-500/30 text-white rounded-xl font-bold">
-                        <SelectValue placeholder="Select minimum rating" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="any">Any rating</SelectItem>
-                        <SelectItem value="4.0">4.0+ stars</SelectItem>
-                        <SelectItem value="4.5">4.5+ stars</SelectItem>
-                        <SelectItem value="4.8">4.8+ stars</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Online Only Filter */}
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="online-only"
-                      checked={filters.onlineOnly}
-                      onCheckedChange={(checked) => setFilters({ ...filters, onlineOnly: checked as boolean })}
-                      className="border-green-500/30 data-[state=checked]:bg-green-500"
-                    />
-                    <Label htmlFor="online-only" className="text-white font-bold">
-                      Show only online users
-                    </Label>
-                  </div>
-
-                  {/* Clear Filters */}
-                  <Button
-                    onClick={clearFilters}
-                    variant="outline"
-                    className="w-full border-green-500/30 text-white hover:bg-green-500/20 rounded-xl bg-transparent font-black"
-                  >
-                    Clear All Filters
-                  </Button>
-                </div>
-              </SheetContent>
-            </Sheet>
-
-            <div className="text-gray-300 font-bold">
-              {filteredUsers.length} {filteredUsers.length === 1 ? "result" : "results"} found
-            </div>
-          </div>
-        </div>
-
-        {/* Results Grid */}
-        {loading ? (
-          <div className="text-center text-white font-bold">Loading results...</div>
-        ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {filteredUsers.map((user) => (
-              <Card
-                key={user.id}
-                className="backdrop-blur-md bg-black/30 border-green-500/30 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 hover:border-green-400/50"
-              >
-                <CardContent className="p-6">
-                  {/* User Info */}
-                  <div className="flex items-center space-x-3 mb-4">
-                    <div className="relative">
-                      <Avatar className="w-12 h-12 ring-2 ring-green-500/30">
-                        <AvatarImage src={user.avatar_url || "/placeholder.svg"} alt={user.name} />
-                        <AvatarFallback className="bg-gradient-to-r from-green-500 to-emerald-600 text-white font-black">
-                          {user.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")}
-                        </AvatarFallback>
-                      </Avatar>
-                      {/* Assuming is_online property exists on User for demo */}
-                      {/* {user.is_online && (
-                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
-                      )} */}
+            <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+              {loading || searchLoading ? (
+                Array.from({ length: 8 }).map((_, i) => (
+                  <Card key={i} className="flex flex-col items-center p-6 text-center">
+                    <Skeleton className="h-24 w-24 rounded-full" />
+                    <Skeleton className="mt-4 h-6 w-3/4" />
+                    <Skeleton className="mt-2 h-4 w-1/2" />
+                    <div className="mt-4 flex flex-wrap justify-center gap-2">
+                      <Skeleton className="h-6 w-16" />
+                      <Skeleton className="h-6 w-16" />
                     </div>
-                    <div className="flex-1">
-                      <h3 className="text-white font-black">{user.name}</h3>
-                      <div className="flex items-center space-x-2 text-sm text-gray-300 font-bold">
-                        <MapPin className="w-3 h-3" />
-                        <span>{user.location}</span>
-                        <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                        <span>{user.rating}</span>
-                      </div>
+                  </Card>
+                ))
+              ) : users.length === 0 ? (
+                <div className="col-span-full text-center text-gray-500">No users found matching your criteria.</div>
+              ) : (
+                users.map((user) => (
+                  <Card key={user.id} className="flex flex-col items-center p-6 text-center">
+                    <Avatar className="h-24 w-24">
+                      <AvatarImage src={user.avatar_url || "/placeholder-user.jpg"} />
+                      <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <h3 className="mt-4 text-xl font-bold">{user.name}</h3>
+                    <p className="text-gray-500 dark:text-gray-400">{user.bio}</p>
+                    <div className="mt-2 flex items-center text-sm text-gray-500 dark:text-gray-400">
+                      <MapPinIcon className="mr-1 h-4 w-4" />
+                      {user.location}
                     </div>
-                  </div>
-
-                  {/* Skills Offered */}
-                  <div className="mb-4">
-                    <h4 className="text-sm font-black text-gray-300 mb-2">Skills Offered</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {user.user_skills_offered?.map((userSkill, index) => (
-                        <Badge
-                          key={index}
-                          className="bg-green-500/20 text-green-300 border-green-500/30 hover:bg-green-500/30 font-black"
-                        >
-                          {userSkill.skill?.name}
+                    <div className="mt-2 flex items-center text-sm text-gray-500 dark:text-gray-400">
+                      <StarIcon className="mr-1 h-4 w-4 fill-yellow-400 text-yellow-400" />
+                      {user.rating} ({user.completed_swaps} swaps)
+                    </div>
+                    <div className="mt-4 flex flex-wrap justify-center gap-2">
+                      {user.user_skills_offered?.map((us) => (
+                        <Badge key={us.skill_id} variant="secondary">
+                          {us.skills?.name}
                         </Badge>
                       ))}
                     </div>
-                  </div>
-
-                  {/* Skills Wanted */}
-                  <div className="mb-4">
-                    <h4 className="text-sm font-black text-gray-300 mb-2">Skills Wanted</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {user.user_skills_wanted?.map((userSkill, index) => (
-                        <Badge
-                          key={index}
-                          className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/30 font-black"
-                        >
-                          {userSkill.skill?.name}
-                        </Badge>
-                      ))}
+                    <div className="mt-4">
+                      <Link href={`/profile/${user.id}`} passHref>
+                        <Button variant="outline">View Profile</Button>
+                      </Link>
+                      {currentUser && currentUser.id !== user.id && (
+                        <Link href={`/swap-request/${user.id}`} passHref>
+                          <Button className="ml-2">Swap Skills</Button>
+                        </Link>
+                      )}
                     </div>
-                  </div>
-
-                  {/* Availability & Price */}
-                  <div className="mb-4">
-                    <div className="flex items-center justify-between text-sm text-gray-300 font-bold">
-                      <div className="flex items-center space-x-2">
-                        <Clock className="w-4 h-4" />
-                        <span>{user.availability}</span>
-                      </div>
-                      <span className="text-green-400 font-black">{user.hourly_rate}/hour</span>
-                    </div>
-                  </div>
-
-                  {/* Description */}
-                  <p className="text-gray-300 text-sm mb-4 font-bold">{user.bio}</p>
-
-                  {/* Action Buttons */}
-                  <div className="flex space-x-2">
-                    <Link href={`/swap-request/${user.id}`}>
-                      <Button className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 font-black">
-                        Send Request
-                      </Button>
-                    </Link>
-                    <Link href={`/profile/${user.id}`}>
-                      <Button
-                        variant="outline"
-                        className="border-green-500/30 text-white hover:bg-green-500/20 bg-transparent font-black"
-                      >
-                        View Profile
-                      </Button>
-                    </Link>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-
-        {/* No Results */}
-        {!loading && filteredUsers.length === 0 && (
-          <div className="text-center py-12">
-            <div className="w-24 h-24 bg-black/30 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Search className="w-12 h-12 text-gray-400" />
+                  </Card>
+                ))
+              )}
             </div>
-            <h3 className="text-xl font-black text-white mb-2">No results found</h3>
-            <p className="text-gray-300 mb-4 font-bold">Try adjusting your search terms or filters</p>
-            <Button
-              onClick={clearFilters}
-              className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 font-black"
-            >
-              Clear Filters
-            </Button>
           </div>
-        )}
-      </div>
+        </section>
+      </main>
     </div>
   )
 }

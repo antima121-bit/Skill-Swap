@@ -1,210 +1,142 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect } from "react"
-import { Search, Filter, MessageCircle, Star, MapPin, ArrowRight } from "lucide-react"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Logo } from "@/components/logo"
-import Link from "next/link"
-
-// Remove the mockSkillListings array and replace with:
-import { searchUsers } from "@/lib/database"
+import { Badge } from "@/components/ui/badge"
+import { StarIcon, MapPinIcon, SearchIcon } from "lucide-react"
+import { searchUsers, getCurrentUser } from "@/lib/database"
 import type { User } from "@/lib/supabase"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export default function HomePage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
+  const [searchLoading, setSearchLoading] = useState(false)
+  const [currentUser, setCurrentUser] = useState<User | null>(null)
 
   useEffect(() => {
-    loadUsers()
+    const loadInitialData = async () => {
+      setLoading(true)
+      const fetchedUsers = await searchUsers("", {})
+      setUsers(fetchedUsers)
+      const user = await getCurrentUser()
+      setCurrentUser(user)
+      setLoading(false)
+    }
+    loadInitialData()
   }, [])
 
-  useEffect(() => {
-    // Only search if searchTerm is not empty, otherwise load initial users
-    if (searchTerm.trim()) {
-      searchUsersWithTerm()
-    } else {
-      loadUsers()
-    }
-  }, [searchTerm])
-
-  const loadUsers = async () => {
-    setLoading(true)
-    try {
-      // Fetch all public users initially
-      const userData = await searchUsers("", {})
-      setUsers(userData.slice(0, 6)) // Show first 6 users
-    } catch (error) {
-      console.error("Error loading users:", error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const searchUsersWithTerm = async () => {
-    setLoading(true)
-    try {
-      const userData = await searchUsers(searchTerm, {})
-      setUsers(userData)
-    } catch (error) {
-      console.error("Error searching users:", error)
-    } finally {
-      setLoading(false)
-    }
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSearchLoading(true)
+    const filteredUsers = await searchUsers(searchTerm, {})
+    setUsers(filteredUsers)
+    setSearchLoading(false)
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-green-900 to-black">
-      {/* Navigation */}
-      <nav className="backdrop-blur-md bg-black/30 border-b border-green-500/30 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-3">
-              <Logo className="w-10 h-10" />
-              <span className="text-white font-black text-xl tracking-wide">Skill Swap India</span>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Link href="/search">
-                <Button variant="ghost" className="text-white hover:bg-green-500/20 font-bold">
-                  Browse
+    <div className="flex min-h-screen flex-col">
+      <main className="flex-1">
+        <section className="w-full py-12 md:py-24 lg:py-32">
+          <div className="container px-4 md:px-6">
+            <div className="flex flex-col items-center justify-center space-y-4 text-center">
+              <div className="space-y-2">
+                <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none">
+                  Skill Swap Platform
+                </h1>
+                <p className="max-w-[600px] text-gray-500 md:text-xl dark:text-gray-400">
+                  Connect with others to exchange skills and knowledge. Learn, teach, and grow together.
+                </p>
+              </div>
+              <form onSubmit={handleSearch} className="flex w-full max-w-md items-center space-x-2">
+                <Input
+                  type="text"
+                  placeholder="Search for skills or users..."
+                  className="flex-1"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                <Button type="submit" disabled={searchLoading}>
+                  {searchLoading ? "Searching..." : <SearchIcon className="h-4 w-4" />}
+                  <span className="sr-only">Search</span>
                 </Button>
-              </Link>
-              <Link href="/profile">
-                <Button variant="ghost" className="text-white hover:bg-green-500/20 font-bold">
-                  Profile
-                </Button>
-              </Link>
-              <Link href="/swaps">
-                <Button variant="ghost" className="text-white hover:bg-green-500/20 font-bold">
-                  My Swaps
-                </Button>
-              </Link>
-              <Link href="/auth">
-                <Button className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 font-black">
-                  Sign In
-                </Button>
-              </Link>
+              </form>
             </div>
           </div>
-        </div>
-      </nav>
-
-      {/* Hero Section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-6xl font-black text-white mb-6">
-            Connect, Trade,{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-500">Grow</span>
-          </h1>
-          <p className="text-xl text-gray-300 mb-8 max-w-3xl mx-auto font-bold">
-            Exchange skills with professionals across India. Learn something new while teaching what you know best.
-          </p>
-
-          {/* Search Bar */}
-          <div className="max-w-2xl mx-auto mb-8">
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <Input
-                placeholder="Search for skills (e.g., React, Photoshop, Marketing...)"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-12 pr-4 py-3 bg-black/30 backdrop-blur-md border-green-500/30 text-white placeholder-gray-400 rounded-2xl text-lg font-bold"
-              />
-              <Button className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 rounded-xl font-black">
-                <Filter className="w-4 h-4" />
-              </Button>
+        </section>
+        <section className="w-full bg-gray-100 py-12 md:py-24 lg:py-32 dark:bg-gray-800">
+          <div className="container px-4 md:px-6">
+            <div className="flex flex-col items-center justify-center space-y-4 text-center">
+              <div className="space-y-2">
+                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Featured Skill Swappers</h2>
+                <p className="max-w-[900px] text-gray-500 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed dark:text-gray-400">
+                  Discover talented individuals ready to share their expertise and learn new skills.
+                </p>
+              </div>
             </div>
-          </div>
-        </div>
-
-        {/* Skill Listings */}
-        {loading ? (
-          <div className="text-center text-white font-bold">Loading users...</div>
-        ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {users.length === 0 ? (
-              <div className="col-span-full text-center text-gray-300 font-bold">No users found.</div>
-            ) : (
-              users.map((user) => (
-                <Card
-                  key={user.id}
-                  className="backdrop-blur-md bg-black/30 border-green-500/30 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 hover:border-green-400/50"
-                >
-                  <CardContent className="p-6">
-                    {/* User Info */}
-                    <div className="flex items-center space-x-3 mb-4">
-                      <Avatar className="w-12 h-12 ring-2 ring-green-500/30">
-                        <AvatarImage src={user.avatar_url || "/placeholder.svg"} alt={user.name} />
-                        <AvatarFallback className="bg-gradient-to-r from-green-500 to-emerald-600 text-white font-black">
-                          {user.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <h3 className="text-white font-black">{user.name}</h3>
-                        <div className="flex items-center space-x-2 text-sm text-gray-300 font-bold">
-                          <MapPin className="w-3 h-3" />
-                          <span>{user.location}</span>
-                          <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                          <span>{user.rating}</span>
-                        </div>
-                      </div>
+            <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+              {loading ? (
+                Array.from({ length: 8 }).map((_, i) => (
+                  <Card key={i} className="flex flex-col items-center p-6 text-center">
+                    <Skeleton className="h-24 w-24 rounded-full" />
+                    <Skeleton className="mt-4 h-6 w-3/4" />
+                    <Skeleton className="mt-2 h-4 w-1/2" />
+                    <div className="mt-4 flex flex-wrap justify-center gap-2">
+                      <Skeleton className="h-6 w-16" />
+                      <Skeleton className="h-6 w-16" />
                     </div>
-
-                    {/* Bio */}
-                    <p className="text-gray-300 text-sm mb-4 font-bold">{user.bio}</p>
-
-                    {/* Rate */}
-                    <div className="mb-4">
-                      <span className="text-green-400 font-black">{user.hourly_rate}/hour</span>
+                  </Card>
+                ))
+              ) : users.length === 0 ? (
+                <div className="col-span-full text-center text-gray-500">No users found.</div>
+              ) : (
+                users.map((user) => (
+                  <Card key={user.id} className="flex flex-col items-center p-6 text-center">
+                    <Avatar className="h-24 w-24">
+                      <AvatarImage src={user.avatar_url || "/placeholder-user.jpg"} />
+                      <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <h3 className="mt-4 text-xl font-bold">{user.name}</h3>
+                    <p className="text-gray-500 dark:text-gray-400">{user.bio}</p>
+                    <div className="mt-2 flex items-center text-sm text-gray-500 dark:text-gray-400">
+                      <MapPinIcon className="mr-1 h-4 w-4" />
+                      {user.location}
                     </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex space-x-2">
-                      <Link href={`/swap-request/${user.id}`}>
-                        <Button className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 font-black">
-                          <MessageCircle className="w-4 h-4 mr-2" />
-                          Swap
-                        </Button>
+                    <div className="mt-2 flex items-center text-sm text-gray-500 dark:text-gray-400">
+                      <StarIcon className="mr-1 h-4 w-4 fill-yellow-400 text-yellow-400" />
+                      {user.rating} ({user.completed_swaps} swaps)
+                    </div>
+                    <div className="mt-4 flex flex-wrap justify-center gap-2">
+                      {user.user_skills_offered?.map((us) => (
+                        <Badge key={us.skill_id} variant="secondary">
+                          {us.skills?.name}
+                        </Badge>
+                      ))}
+                    </div>
+                    <div className="mt-4">
+                      <Link href={`/profile/${user.id}`} passHref>
+                        <Button variant="outline">View Profile</Button>
                       </Link>
-                      <Link href={`/profile/${user.id}`}>
-                        <Button
-                          variant="outline"
-                          className="border-green-500/30 text-white hover:bg-green-500/20 bg-transparent font-black"
-                        >
-                          View Profile
-                        </Button>
-                      </Link>
+                      {currentUser && currentUser.id !== user.id && (
+                        <Link href={`/swap-request/${user.id}`} passHref>
+                          <Button className="ml-2">Swap Skills</Button>
+                        </Link>
+                      )}
                     </div>
-                  </CardContent>
-                </Card>
-              ))
-            )}
+                  </Card>
+                ))
+              )}
+            </div>
           </div>
-        )}
-
-        {/* Call to Action */}
-        <div className="text-center mt-12">
-          <Card className="backdrop-blur-md bg-black/30 border-green-500/30 rounded-2xl shadow-xl max-w-2xl mx-auto">
-            <CardContent className="p-8">
-              <h2 className="text-2xl font-black text-white mb-4">Ready to Start Swapping?</h2>
-              <p className="text-gray-300 mb-6 font-bold">
-                Join thousands of Indian professionals exchanging skills and growing together.
-              </p>
-              <Link href="/auth">
-                <Button className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-lg px-8 py-3 font-black">
-                  Get Started <ArrowRight className="w-5 h-5 ml-2" />
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+        </section>
+      </main>
     </div>
   )
 }
