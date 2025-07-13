@@ -40,19 +40,6 @@ Team members: Nikhil Kumar Gupta- nikhil.kumargupta0007@gmail.com Antima Mishra-
 
 
 
-# Skill swap platform
-
-*Automatically synced with your [v0.dev](https://v0.dev) deployments*
-
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/antimamishra113-gmailcoms-projects/v0-skill-swap-platform)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.dev-black?style=for-the-badge)](https://v0.dev/chat/projects/1R87tZpoAOS)
-
-## Overview
-
-This repository will stay in sync with your deployed chats on [v0.dev](https://v0.dev).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.dev](https://v0.dev).
-
-
 ## How It Works
 
 1. Create and modify your project using [v0.dev](https://v0.dev)
